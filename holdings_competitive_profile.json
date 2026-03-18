@@ -1,0 +1,1987 @@
+{
+  "4628 JP": {
+    "name": "SK Kaken Co Ltd",
+    "sector": "Paints / Coatings",
+    "products": "Architectural coatings, fireproof coatings, floor coatings, waterproofing, civil engineering materials",
+    "competitor_keywords": [
+      "architectural coatings",
+      "fireproof paint",
+      "smart coatings",
+      "eco-friendly coatings"
+    ],
+    "side": "long"
+  },
+  "5958 JP": {
+    "name": "Sanyo Industries Ltd",
+    "sector": "Metal Products / Exterior Materials",
+    "products": "Rain gutters, exterior wall materials, roofing materials, building envelope products",
+    "competitor_keywords": [
+      "building materials",
+      "exterior cladding",
+      "smart building materials",
+      "prefab building components"
+    ],
+    "side": "long"
+  },
+  "6061 JP": {
+    "name": "Universal Engeisha KK",
+    "sector": "Engineering Services",
+    "products": "Engineering consulting, transportation planning, environmental assessment, disaster prevention, urban planning",
+    "competitor_keywords": [
+      "engineering software",
+      "BIM",
+      "urban planning tech",
+      "digital twin",
+      "smart city"
+    ],
+    "side": "long"
+  },
+  "5982 JP": {
+    "name": "Maruzen Co Ltd/Taito ward",
+    "sector": "Wire Products / Industrial",
+    "products": "Steel wire products, springs, wire rope, metal fittings, precision parts",
+    "competitor_keywords": [
+      "wire products",
+      "spring manufacturing",
+      "precision parts",
+      "advanced manufacturing"
+    ],
+    "side": "long"
+  },
+  "6874 JP": {
+    "name": "Kyoritsu Electric Corp",
+    "sector": "Electronic Test Equipment",
+    "products": "Electrical measuring instruments, power meters, power analyzers, insulation testers",
+    "competitor_keywords": [
+      "test and measurement",
+      "power analyzer",
+      "IoT monitoring",
+      "smart grid testing"
+    ],
+    "side": "long"
+  },
+  "8066 JP": {
+    "name": "Mitani Corp",
+    "sector": "Trading / Distribution",
+    "products": "Chemical products trading, electronics materials, synthetic resins, building materials, green energy",
+    "competitor_keywords": [
+      "chemical distribution",
+      "B2B marketplace",
+      "chemical trading platform",
+      "supply chain tech"
+    ],
+    "side": "long"
+  },
+  "1828 JP": {
+    "name": "TANABE ENGINEERING CORP",
+    "sector": "Construction Engineering",
+    "products": "Plant engineering, environmental engineering, water treatment, civil engineering, building construction",
+    "competitor_keywords": [
+      "construction tech",
+      "water treatment",
+      "environmental tech",
+      "modular construction",
+      "green building"
+    ],
+    "side": "long"
+  },
+  "4465 JP": {
+    "name": "Niitaka Co Ltd",
+    "sector": "Industrial Chemicals / Hygiene",
+    "products": "Industrial detergents, food sanitation chemicals, dishwasher detergents, sanitizers for food service",
+    "competitor_keywords": [
+      "industrial cleaning",
+      "food safety chemicals",
+      "sanitation technology",
+      "enzymatic cleaners"
+    ],
+    "side": "long"
+  },
+  "2208 JP": {
+    "name": "Bourbon Corp/Japan",
+    "sector": "Confectionery / Snacks",
+    "products": "Biscuits, snacks, chocolates, rice crackers, gummies (Alfort, Petit, LuMonde brands)",
+    "competitor_keywords": [
+      "snack food",
+      "confectionery",
+      "DTC snacks",
+      "healthy snacks",
+      "premium confectionery"
+    ],
+    "side": "long"
+  },
+  "5888 JP": {
+    "name": "DAIWA CYCLE Co Ltd",
+    "sector": "Bicycle Retail",
+    "products": "Daiwa Cycle bicycle retail chain, bicycles, cycling accessories, repair services",
+    "competitor_keywords": [
+      "bicycle retail",
+      "e-bike",
+      "bike sharing",
+      "micro-mobility",
+      "DTC bicycle"
+    ],
+    "side": "long"
+  },
+  "2924 JP": {
+    "name": "Ifuji Sangyo Co Ltd",
+    "sector": "Food Packaging / Distribution",
+    "products": "Food packaging materials, disposable food containers, food ingredients distribution, household goods",
+    "competitor_keywords": [
+      "food packaging",
+      "sustainable packaging",
+      "biodegradable containers",
+      "food service supplies"
+    ],
+    "side": "long"
+  },
+  "1866 JP": {
+    "name": "Kitano Construction Corp",
+    "sector": "Construction",
+    "products": "General construction, civil engineering, architecture, real estate development in Hokkaido region",
+    "competitor_keywords": [
+      "construction tech",
+      "modular construction",
+      "BIM software",
+      "construction robotics"
+    ],
+    "side": "long"
+  },
+  "5071 JP": {
+    "name": "VIS Co Ltd",
+    "sector": "Staffing / Outsourcing",
+    "products": "Construction staffing, manufacturing dispatch, technical staffing, facility management",
+    "competitor_keywords": [
+      "staffing platform",
+      "construction staffing tech",
+      "gig economy",
+      "workforce management"
+    ],
+    "side": "long"
+  },
+  "2415 JP": {
+    "name": "Human Holdings Co Ltd",
+    "sector": "Education / Staffing",
+    "products": "Human resource development, education business, vocational schools, staffing/temporary workers",
+    "competitor_keywords": [
+      "edtech",
+      "online education",
+      "HR tech",
+      "staffing platform",
+      "e-learning"
+    ],
+    "side": "long"
+  },
+  "7781 JP": {
+    "name": "HIRAYAMA Holdings Co Ltd",
+    "sector": "Manufacturing Staffing",
+    "products": "Factory staffing/dispatch, manufacturing outsourcing, technical staffing, facility management",
+    "competitor_keywords": [
+      "staffing tech",
+      "gig economy platform",
+      "manufacturing staffing",
+      "workforce management"
+    ],
+    "side": "long"
+  },
+  "6239 JP": {
+    "name": "Nagaoka International Corp",
+    "sector": "Industrial Equipment",
+    "products": "Water/oil well screens, internals for chemical plants/refineries, wedge wire screens, process equipment",
+    "competitor_keywords": [
+      "water treatment",
+      "industrial filtration",
+      "process equipment",
+      "desalination tech"
+    ],
+    "side": "long"
+  },
+  "9799 JP": {
+    "name": "Asahi Intelligence Service Co Ltd",
+    "sector": "IT Services",
+    "products": "System integration, software development, IT infrastructure, cloud services, data center operations",
+    "competitor_keywords": [
+      "IT services",
+      "cloud migration",
+      "digital transformation",
+      "low-code platform",
+      "SaaS"
+    ],
+    "side": "long"
+  },
+  "9145 JP": {
+    "name": "Being Holdings Co Ltd",
+    "sector": "Logistics IT / Transportation",
+    "products": "Logistics/transportation services, funeral services, IT solutions for logistics, real estate",
+    "competitor_keywords": [
+      "logistics tech",
+      "freight marketplace",
+      "last-mile delivery",
+      "supply chain platform"
+    ],
+    "side": "long"
+  },
+  "6626 JP": {
+    "name": "SEMITEC Corp",
+    "sector": "Electronic Components",
+    "products": "Thermistors (temperature sensors), sensor modules, automotive sensors, industrial sensors",
+    "competitor_keywords": [
+      "temperature sensor",
+      "thermistor",
+      "IoT sensor",
+      "MEMS sensor",
+      "automotive sensor"
+    ],
+    "side": "long"
+  },
+  "7521 JP": {
+    "name": "Musashi Co Ltd",
+    "sector": "Auto Parts Retail",
+    "products": "Automotive parts/accessories retail, car maintenance services, tire sales",
+    "competitor_keywords": [
+      "online auto parts",
+      "auto parts marketplace",
+      "car maintenance platform",
+      "EV parts"
+    ],
+    "side": "long"
+  },
+  "3723 JP": {
+    "name": "Nihon Falcom Corp",
+    "sector": "Video Games",
+    "products": "RPG video games (Trails/Kiseki series, Ys series), game publishing, game development",
+    "competitor_keywords": [
+      "video game developer",
+      "indie game studio",
+      "JRPG",
+      "game publisher",
+      "mobile gaming"
+    ],
+    "side": "long"
+  },
+  "Cash&Other": {
+    "name": "Cash & Other",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "long"
+  },
+  "TSM": {
+    "name": "Taiwan Semiconductor Manufacturing Co Ltd",
+    "sector": "Semiconductors",
+    "products": "Advanced semiconductor foundry services, chip manufacturing (3nm/5nm/7nm), wafer fabrication, packaging",
+    "competitor_keywords": [
+      "semiconductor foundry",
+      "chip manufacturing",
+      "wafer fabrication",
+      "advanced packaging",
+      "AI chips"
+    ],
+    "side": "long"
+  },
+  "9435 JP": {
+    "name": "Hikari Tsushin Inc",
+    "sector": "Telecom / IT Services",
+    "products": "Telecom sales (NTT/KDDI reseller), OA equipment, insurance sales, IoT, mobile, broadband",
+    "competitor_keywords": [
+      "telecom reseller",
+      "IT services",
+      "managed services",
+      "digital transformation",
+      "business telecom"
+    ],
+    "side": "long"
+  },
+  "ET": {
+    "name": "Energy Transfer LP",
+    "sector": "Midstream Energy",
+    "products": "Natural gas pipelines, NGL fractionation, crude oil transportation, LNG export terminal",
+    "competitor_keywords": [
+      "natural gas pipeline",
+      "midstream energy",
+      "NGL fractionation",
+      "LNG terminal",
+      "energy infrastructure"
+    ],
+    "side": "long"
+  },
+  "GOOG": {
+    "name": "Alphabet Inc",
+    "sector": "Technology / Internet",
+    "products": "Search engine, digital advertising, cloud computing (GCP), Android, AI/ML, YouTube",
+    "competitor_keywords": [
+      "search engine",
+      "digital advertising",
+      "cloud computing",
+      "AI platform",
+      "generative AI",
+      "video streaming"
+    ],
+    "side": "long"
+  },
+  "OMAB": {
+    "name": "Grupo Aeroportuario del Centro Norte SAB de CV",
+    "sector": "Airport Operations",
+    "products": "Airport management (13 airports in central/northern Mexico), aeronautical/non-aeronautical revenue",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "aeronautical services",
+      "airport technology"
+    ],
+    "side": "long"
+  },
+  "WES": {
+    "name": "Western Midstream Partners LP",
+    "sector": "Midstream Energy",
+    "products": "Natural gas gathering/processing, crude oil transportation, produced water disposal",
+    "competitor_keywords": [
+      "natural gas gathering",
+      "midstream services",
+      "produced water disposal",
+      "gas processing"
+    ],
+    "side": "long"
+  },
+  "PAC": {
+    "name": "Grupo Aeroportuario del Pacifico SAB de CV",
+    "sector": "Airport Operations",
+    "products": "Airport management (12 airports in Pacific Mexico incl Guadalajara/Tijuana), duty-free, parking",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "aeronautical services",
+      "airport technology"
+    ],
+    "side": "long"
+  },
+  "AMZN": {
+    "name": "Amazon.com Inc",
+    "sector": "E-commerce / Cloud Computing",
+    "products": "Online retail marketplace, AWS cloud services, Prime streaming, logistics/fulfillment, Alexa/devices",
+    "competitor_keywords": [
+      "ecommerce marketplace",
+      "cloud computing",
+      "fulfillment logistics",
+      "online retail",
+      "AI cloud services"
+    ],
+    "side": "long"
+  },
+  "FGXXX": {
+    "name": "First American Government Obligations Fund 12/01/2031",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "long"
+  },
+  "AX": {
+    "name": "Axos Financial Inc",
+    "sector": "Digital Banking",
+    "products": "Online banking, commercial/industrial lending, mortgage lending, auto lending, fintech banking",
+    "competitor_keywords": [
+      "digital bank",
+      "online banking",
+      "neobank",
+      "fintech lending",
+      "digital mortgage"
+    ],
+    "side": "long"
+  },
+  "CSWC": {
+    "name": "Capital Southwest Corp",
+    "sector": "Business Development Company",
+    "products": "Middle market lending, direct lending, mezzanine financing, equity co-investments",
+    "competitor_keywords": [
+      "direct lending",
+      "middle market lending",
+      "private credit",
+      "BDC"
+    ],
+    "side": "long"
+  },
+  "MPLX": {
+    "name": "MPLX LP",
+    "sector": "Midstream Energy",
+    "products": "Natural gas gathering/processing, crude oil/NGL logistics, pipeline transportation",
+    "competitor_keywords": [
+      "natural gas processing",
+      "NGL logistics",
+      "midstream pipeline",
+      "crude oil transport"
+    ],
+    "side": "long"
+  },
+  "BNP FP": {
+    "name": "BNP Paribas SA",
+    "sector": "Banking",
+    "products": "Corporate/institutional banking, retail banking, asset management, insurance, securities services",
+    "competitor_keywords": [
+      "digital banking Europe",
+      "neobank",
+      "fintech payments",
+      "European banking",
+      "trade finance platform"
+    ],
+    "side": "long"
+  },
+  "CAAP": {
+    "name": "Corp America Airports SA",
+    "sector": "Airport Operations",
+    "products": "Airport concessions in Argentina, Brazil, Uruguay, Ecuador, Armenia, Italy",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "Latin America airports",
+      "aeronautical services"
+    ],
+    "side": "long"
+  },
+  "6920 JP": {
+    "name": "Lasertec Corp",
+    "sector": "Semiconductor Equipment",
+    "products": "Semiconductor mask inspection/review equipment, EUV mask blank inspection, SEM review systems",
+    "competitor_keywords": [
+      "semiconductor inspection",
+      "EUV lithography",
+      "mask inspection",
+      "wafer inspection",
+      "chip metrology"
+    ],
+    "side": "long"
+  },
+  "4966 JP": {
+    "name": "C Uyemura & Co Ltd",
+    "sector": "Specialty Chemicals / Semiconductor",
+    "products": "Surface finishing chemicals (plating for electronics), semiconductor packaging chemicals, industrial plating",
+    "competitor_keywords": [
+      "electroplating chemicals",
+      "semiconductor packaging",
+      "surface treatment",
+      "advanced packaging materials"
+    ],
+    "side": "long"
+  },
+  "GRUMAB MM": {
+    "name": "Gruma SAB de CV",
+    "sector": "Food Manufacturing",
+    "products": "Corn flour (Maseca), tortillas, flatbreads, wheat flour, rice, palm oil",
+    "competitor_keywords": [
+      "corn flour",
+      "tortilla manufacturing",
+      "flatbread",
+      "food manufacturing",
+      "plant-based flour"
+    ],
+    "side": "long"
+  },
+  "SFM": {
+    "name": "Sprouts Farmers Market Inc",
+    "sector": "Grocery Retail",
+    "products": "Natural/organic grocery stores, fresh produce, health-focused food retail",
+    "competitor_keywords": [
+      "organic grocery",
+      "natural food store",
+      "health food retail",
+      "fresh grocery delivery",
+      "specialty grocery"
+    ],
+    "side": "long"
+  },
+  "ASR": {
+    "name": "Grupo Aeroportuario del Sureste SAB de CV",
+    "sector": "Airport Operations",
+    "products": "Airport management (9 airports in SE Mexico incl Cancun), hotel, cargo terminal",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "aeronautical services",
+      "airport technology"
+    ],
+    "side": "long"
+  },
+  "AGM": {
+    "name": "Federal Agricultural Mortgage Corp",
+    "sector": "Agricultural Finance",
+    "products": "Agricultural mortgage loans, farm/ranch financing, rural infrastructure lending, USDA-backed securities",
+    "competitor_keywords": [
+      "agricultural lending",
+      "farm mortgage",
+      "rural finance",
+      "ag-tech lending"
+    ],
+    "side": "long"
+  },
+  "8058 JP": {
+    "name": "Mitsubishi Corp",
+    "sector": "Trading / Conglomerate",
+    "products": "Energy, metals, machinery, chemicals, food, industrial finance, urban development",
+    "competitor_keywords": [
+      "commodity trading",
+      "supply chain platform",
+      "B2B marketplace",
+      "energy trading technology"
+    ],
+    "side": "long"
+  },
+  "TX": {
+    "name": "Ternium SA",
+    "sector": "Steel Manufacturing",
+    "products": "Flat steel products, long steel products, iron ore mining, steel distribution",
+    "competitor_keywords": [
+      "steel manufacturing",
+      "flat steel",
+      "steel distribution",
+      "green steel"
+    ],
+    "side": "long"
+  },
+  "MEDP": {
+    "name": "Medpace Holdings Inc",
+    "sector": "Clinical Research / CRO",
+    "products": "Contract research organization, clinical trial management, bioanalytical lab services, regulatory consulting",
+    "competitor_keywords": [
+      "clinical trial",
+      "CRO",
+      "contract research",
+      "clinical data management",
+      "decentralized trials",
+      "biotech services"
+    ],
+    "side": "long"
+  },
+  "9042 JP": {
+    "name": "Hankyu Hanshin Holdings Inc",
+    "sector": "Railway / Entertainment",
+    "products": "Railway operations (Hankyu/Hanshin), real estate development, entertainment (Takarazuka), hotels, retail",
+    "competitor_keywords": [
+      "mobility as a service",
+      "MaaS",
+      "smart transit",
+      "urban mobility",
+      "ride sharing"
+    ],
+    "side": "long"
+  },
+  "9022 JP": {
+    "name": "Central Japan Railway Co",
+    "sector": "Railway",
+    "products": "Tokaido Shinkansen (bullet train), conventional rail, bus transport, real estate, hotels, department stores",
+    "competitor_keywords": [
+      "high-speed rail",
+      "MaaS",
+      "mobility platform",
+      "intercity transport",
+      "autonomous transport"
+    ],
+    "side": "long"
+  },
+  "5393 JP": {
+    "name": "Nichias Corp",
+    "sector": "Industrial Materials",
+    "products": "Thermal insulation (Rockwool), sealing materials (gaskets), industrial packing, fluororesin products, brake friction",
+    "competitor_keywords": [
+      "thermal insulation",
+      "sealing materials",
+      "industrial gaskets",
+      "advanced materials",
+      "aerogel insulation"
+    ],
+    "side": "long"
+  },
+  "3003 JP": {
+    "name": "Hulic Co Ltd",
+    "sector": "Real Estate",
+    "products": "Office buildings, commercial facilities, hotels, senior housing, real estate leasing, asset management",
+    "competitor_keywords": [
+      "real estate tech",
+      "proptech",
+      "office leasing platform",
+      "coworking space",
+      "flexible office"
+    ],
+    "side": "long"
+  },
+  "JFN SW": {
+    "name": "Jungfraubahn Holding AG",
+    "sector": "Tourism / Transportation",
+    "products": "Jungfrau railway, mountain tourism (Jungfraujoch, Grindelwald), hotels, ski operations",
+    "competitor_keywords": [
+      "mountain tourism",
+      "adventure tourism",
+      "travel experience platform",
+      "outdoor recreation tech"
+    ],
+    "side": "long"
+  },
+  "8053 JP": {
+    "name": "Sumitomo Corp",
+    "sector": "Trading / Conglomerate",
+    "products": "Metal products, transportation/construction, infrastructure, media/digital, mineral resources, energy",
+    "competitor_keywords": [
+      "commodity trading",
+      "supply chain platform",
+      "B2B marketplace",
+      "energy trading technology"
+    ],
+    "side": "long"
+  },
+  "AENA SM": {
+    "name": "Aena SME SA",
+    "sector": "Airport Operations",
+    "products": "Airport management (46 Spanish airports + London Luton), aeronautical/commercial revenue",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "airport technology",
+      "aeronautical services"
+    ],
+    "side": "long"
+  },
+  "WALMEX* MM": {
+    "name": "Wal-Mart de Mexico SAB de CV",
+    "sector": "Retail",
+    "products": "Supermarkets (Walmart, Bodega Aurrera), Sam's Club Mexico, ecommerce, Bait (fintech)",
+    "competitor_keywords": [
+      "Mexico retail",
+      "supermarket",
+      "ecommerce Mexico",
+      "quick commerce",
+      "discount retail"
+    ],
+    "side": "long"
+  },
+  "8001 JP": {
+    "name": "ITOCHU Corp",
+    "sector": "Trading / Conglomerate",
+    "products": "Textiles, machinery, metals/minerals, energy, food, chemicals, ICT, real estate, finance",
+    "competitor_keywords": [
+      "commodity trading",
+      "supply chain platform",
+      "B2B marketplace",
+      "trade finance technology"
+    ],
+    "side": "long"
+  },
+  "6432 JP": {
+    "name": "Takeuchi Manufacturing Co Ltd",
+    "sector": "Construction Equipment",
+    "products": "Compact excavators, compact track loaders, wheel loaders, compact equipment for global markets",
+    "competitor_keywords": [
+      "compact excavator",
+      "construction equipment",
+      "electric excavator",
+      "autonomous construction"
+    ],
+    "side": "long"
+  },
+  "CCS": {
+    "name": "Century Communities Inc",
+    "sector": "Homebuilding",
+    "products": "Single-family homes, attached homes, entry-level/move-up housing, mortgage origination",
+    "competitor_keywords": [
+      "homebuilder",
+      "residential construction",
+      "modular homes",
+      "proptech",
+      "3D printed homes"
+    ],
+    "side": "long"
+  },
+  "8078 JP": {
+    "name": "Hanwa Co Ltd",
+    "sector": "Steel / Materials Trading",
+    "products": "Steel products trading, non-ferrous metals, food distribution, petroleum, chemicals, lumber",
+    "competitor_keywords": [
+      "steel trading",
+      "metals marketplace",
+      "B2B materials trading",
+      "steel supply chain"
+    ],
+    "side": "long"
+  },
+  "3288 JP": {
+    "name": "Open House Group Co Ltd",
+    "sector": "Real Estate / Homebuilding",
+    "products": "Detached housing, condominiums, real estate brokerage, wealth consulting, US real estate",
+    "competitor_keywords": [
+      "proptech",
+      "online real estate",
+      "iBuyer",
+      "digital mortgage Japan",
+      "real estate marketplace"
+    ],
+    "side": "long"
+  },
+  "2768 JP": {
+    "name": "Sojitz Corp",
+    "sector": "Trading / Conglomerate",
+    "products": "Automotive, aerospace, energy/infrastructure, metals/coal, chemicals, food/agriculture, retail",
+    "competitor_keywords": [
+      "commodity trading",
+      "supply chain platform",
+      "B2B marketplace",
+      "trade finance technology"
+    ],
+    "side": "long"
+  },
+  "8031 JP": {
+    "name": "Mitsui & Co Ltd",
+    "sector": "Trading / Conglomerate",
+    "products": "Iron ore, LNG, machinery, chemicals, food, finance, real estate, ICT",
+    "competitor_keywords": [
+      "commodity trading",
+      "supply chain platform",
+      "B2B marketplace",
+      "energy trading technology"
+    ],
+    "side": "long"
+  },
+  "MS": {
+    "name": "Morgan Stanley",
+    "sector": "Investment Banking / Financial Services",
+    "products": "Investment banking, wealth management, institutional securities, asset management",
+    "competitor_keywords": [
+      "investment banking",
+      "wealth management",
+      "fintech trading",
+      "robo-advisor",
+      "digital wealth"
+    ],
+    "side": "long"
+  },
+  "8697 JP": {
+    "name": "Japan Exchange Group Inc",
+    "sector": "Financial Exchange",
+    "products": "Tokyo Stock Exchange, Osaka Exchange (derivatives), Japan Securities Clearing, market data",
+    "competitor_keywords": [
+      "stock exchange",
+      "trading platform",
+      "crypto exchange",
+      "DeFi",
+      "digital asset exchange"
+    ],
+    "side": "long"
+  },
+  "6490 JP": {
+    "name": "PILLAR Corp /Japan",
+    "sector": "Industrial Seals / Fluid Control",
+    "products": "Mechanical seals, bellows, packing/gaskets, expansion joints for semiconductor/chemical/energy plants",
+    "competitor_keywords": [
+      "mechanical seal",
+      "fluid control",
+      "industrial sealing",
+      "semiconductor fluid control"
+    ],
+    "side": "long"
+  },
+  "8473 JP": {
+    "name": "SBI Holdings Inc",
+    "sector": "Online Financial Services",
+    "products": "Online securities (SBI Securities), banking, insurance, crypto exchange, asset management, biotech investments",
+    "competitor_keywords": [
+      "online brokerage",
+      "neobank",
+      "crypto exchange",
+      "robo-advisor",
+      "fintech platform"
+    ],
+    "side": "long"
+  },
+  "MC FP": {
+    "name": "LVMH Moet Hennessy Louis Vuitton SE",
+    "sector": "Luxury Goods",
+    "products": "Fashion/leather goods (Louis Vuitton, Dior), wines/spirits (Hennessy, Mo\u00ebt), watches/jewelry (Bulgari, Tiffany), perfume/cosmetics, selective retail (Sephora, DFS)",
+    "competitor_keywords": [
+      "luxury fashion",
+      "luxury ecommerce",
+      "DTC luxury brand",
+      "prestige beauty",
+      "luxury resale"
+    ],
+    "side": "long"
+  },
+  "8830 JP": {
+    "name": "Sumitomo Realty & Development Co Ltd",
+    "sector": "Real Estate",
+    "products": "Office buildings, residential development, real estate leasing, custom-built housing",
+    "competitor_keywords": [
+      "real estate tech",
+      "proptech",
+      "office leasing platform",
+      "coworking space",
+      "flexible office"
+    ],
+    "side": "long"
+  },
+  "2201 JP": {
+    "name": "Morinaga & Co Ltd/Japan",
+    "sector": "Confectionery",
+    "products": "Caramels, chocolates (DARS, Bake), biscuits, ice cream, frozen desserts, health food (in:bar)",
+    "competitor_keywords": [
+      "confectionery",
+      "chocolate brand",
+      "healthy snacks",
+      "DTC sweets",
+      "functional food"
+    ],
+    "side": "long"
+  },
+  "8604 JP": {
+    "name": "Nomura Holdings Inc",
+    "sector": "Investment Banking / Securities",
+    "products": "Securities brokerage, investment banking, asset management, wholesale trading, retail financial services",
+    "competitor_keywords": [
+      "online brokerage",
+      "digital wealth management",
+      "robo-advisor",
+      "fintech trading"
+    ],
+    "side": "long"
+  },
+  "9418 JP": {
+    "name": "U-Next Holdings Co Ltd",
+    "sector": "Streaming / Telecom",
+    "products": "U-NEXT video streaming, USEN business music/services, energy supply, store solutions",
+    "competitor_keywords": [
+      "video streaming",
+      "OTT platform",
+      "business music",
+      "digital content platform"
+    ],
+    "side": "long"
+  },
+  "4975 JP": {
+    "name": "JCU Corp",
+    "sector": "Specialty Chemicals",
+    "products": "Electroplating chemicals (for electronics/semiconductor), specialty chemicals for copper plating, surface treatment",
+    "competitor_keywords": [
+      "electroplating",
+      "semiconductor chemicals",
+      "surface treatment chemicals",
+      "PCB chemicals"
+    ],
+    "side": "long"
+  },
+  "8194 JP": {
+    "name": "Life Corp",
+    "sector": "Supermarket Retail",
+    "products": "Life supermarket chain, natural/organic food, prepared foods, fresh produce (Kanto/Kinki area)",
+    "competitor_keywords": [
+      "online grocery",
+      "grocery delivery",
+      "quick commerce",
+      "food delivery",
+      "dark store"
+    ],
+    "side": "long"
+  },
+  "8804 JP": {
+    "name": "Tokyo Tatemono Co Ltd",
+    "sector": "Real Estate",
+    "products": "Office buildings, condominiums, commercial facilities, asset management, real estate fund management",
+    "competitor_keywords": [
+      "real estate tech",
+      "proptech",
+      "online condo marketplace",
+      "coworking",
+      "flexible office"
+    ],
+    "side": "long"
+  },
+  "6951 JP": {
+    "name": "Jeol Ltd",
+    "sector": "Scientific Instruments",
+    "products": "Electron microscopes (SEM/TEM), mass spectrometers, NMR, semiconductor inspection, medical equipment",
+    "competitor_keywords": [
+      "electron microscope",
+      "mass spectrometer",
+      "scientific instruments",
+      "semiconductor metrology",
+      "cryo-EM"
+    ],
+    "side": "long"
+  },
+  "7744 JP": {
+    "name": "Noritsu Koki Co Ltd",
+    "sector": "Healthcare / Industrial Equipment",
+    "products": "Medical device business, genetic testing, healthcare IT, photo finishing equipment, industrial printing",
+    "competitor_keywords": [
+      "genetic testing",
+      "medical devices",
+      "healthcare IT",
+      "diagnostics",
+      "precision medicine"
+    ],
+    "side": "long"
+  },
+  "7419 JP": {
+    "name": "Nojima Corp",
+    "sector": "Electronics Retail",
+    "products": "Consumer electronics retail (Nojima stores), mobile phone sales, IoT devices, carrier services",
+    "competitor_keywords": [
+      "electronics ecommerce",
+      "online electronics",
+      "refurbished electronics",
+      "electronics marketplace"
+    ],
+    "side": "long"
+  },
+  "9672 JP": {
+    "name": "Tokyotokeiba Co Ltd",
+    "sector": "Horse Racing / Entertainment",
+    "products": "Tokyo City Keiba (horse racing), race track operation, betting, leisure facilities",
+    "competitor_keywords": [
+      "online betting",
+      "sports betting",
+      "gambling tech",
+      "digital wagering platform"
+    ],
+    "side": "long"
+  },
+  "PKBK": {
+    "name": "Parke Bancorp Inc",
+    "sector": "Community Banking",
+    "products": "Commercial banking, residential mortgage lending, SBA loans, business banking",
+    "competitor_keywords": [
+      "community bank",
+      "digital banking",
+      "fintech lending",
+      "small business lending"
+    ],
+    "side": "long"
+  },
+  "8850 JP": {
+    "name": "Starts Corp Inc",
+    "sector": "Real Estate / Property Management",
+    "products": "Condominium development, property management, construction, real estate brokerage, senior living",
+    "competitor_keywords": [
+      "proptech",
+      "property management tech",
+      "real estate marketplace",
+      "smart building"
+    ],
+    "side": "long"
+  },
+  "9104 JP": {
+    "name": "Mitsui OSK Lines Ltd",
+    "sector": "Shipping",
+    "products": "Container shipping (ONE alliance), dry bulk carriers, tankers, LNG carriers, car carriers, offshore",
+    "competitor_keywords": [
+      "digital freight",
+      "shipping tech",
+      "freight marketplace",
+      "autonomous shipping",
+      "green shipping"
+    ],
+    "side": "long"
+  },
+  "6675 JP": {
+    "name": "SAXA Inc",
+    "sector": "Telecom Equipment / Systems",
+    "products": "Business phone systems, IP-PBX, networking equipment, security systems, IoT solutions",
+    "competitor_keywords": [
+      "cloud PBX",
+      "UCaaS",
+      "VoIP",
+      "business communication platform",
+      "IoT communication"
+    ],
+    "side": "long"
+  },
+  "8074 JP": {
+    "name": "Yuasa Trading Co Ltd",
+    "sector": "Industrial Trading",
+    "products": "Industrial machinery distribution, bearings, tools, factory equipment, environmental systems",
+    "competitor_keywords": [
+      "industrial supply marketplace",
+      "MRO ecommerce",
+      "industrial IoT",
+      "B2B procurement"
+    ],
+    "side": "long"
+  },
+  "5480 JP": {
+    "name": "Nippon Yakin Kogyo Co Ltd",
+    "sector": "Specialty Steel",
+    "products": "Stainless steel, nickel alloys, high-temperature alloys, corrosion-resistant alloys for chemical/energy/semiconductor",
+    "competitor_keywords": [
+      "specialty steel",
+      "nickel alloy",
+      "high-performance alloy",
+      "advanced materials"
+    ],
+    "side": "long"
+  },
+  "7609 JP": {
+    "name": "Daitron Co Ltd",
+    "sector": "Electronics Distribution",
+    "products": "Semiconductor distribution, electronic component sales, manufacturing equipment, FA systems",
+    "competitor_keywords": [
+      "semiconductor distribution",
+      "electronic components",
+      "FA equipment",
+      "electronics marketplace"
+    ],
+    "side": "long"
+  },
+  "8154 JP": {
+    "name": "Kaga Electronics Co Ltd",
+    "sector": "Electronics Distribution",
+    "products": "Electronic component distribution, EMS (contract manufacturing), IoT solutions, LED systems",
+    "competitor_keywords": [
+      "electronic component distribution",
+      "EMS manufacturing",
+      "IoT platform",
+      "electronics marketplace"
+    ],
+    "side": "long"
+  },
+  "6250 JP": {
+    "name": "YAMABIKO Corp",
+    "sector": "Outdoor Power Equipment",
+    "products": "Chain saws, brush cutters, lawn mowers, agricultural sprayers, generators (Kioritz/Echo/Shindaiwa)",
+    "competitor_keywords": [
+      "outdoor power equipment",
+      "electric lawn tools",
+      "battery-powered tools",
+      "robotic mower"
+    ],
+    "side": "long"
+  },
+  "9960 JP": {
+    "name": "Totech Corp",
+    "sector": "Industrial Trading / Electronics",
+    "products": "Air conditioning equipment, electrical materials, information systems, industrial equipment distribution",
+    "competitor_keywords": [
+      "HVAC distribution",
+      "building equipment marketplace",
+      "smart HVAC",
+      "energy management"
+    ],
+    "side": "long"
+  },
+  "FHZN SW": {
+    "name": "Flughafen Zurich AG",
+    "sector": "Airport Operations",
+    "products": "Zurich Airport management, airport commercial services, airport real estate, international concessions",
+    "competitor_keywords": [
+      "airport operations",
+      "airport concession",
+      "airport technology",
+      "aeronautical services"
+    ],
+    "side": "long"
+  },
+  "2602 JP": {
+    "name": "Nisshin Oillio Group Ltd/The",
+    "sector": "Edible Oil / Food",
+    "products": "Cooking oils (soybean, canola, olive), MCT oil, margarines, soy protein, fine chemicals",
+    "competitor_keywords": [
+      "edible oil",
+      "plant-based oil",
+      "specialty oil",
+      "healthy cooking oil",
+      "food ingredients"
+    ],
+    "side": "long"
+  },
+  "1913 HK": {
+    "name": "PRADA SpA",
+    "sector": "Luxury Fashion",
+    "products": "Prada leather goods/fashion, Miu Miu fashion, Church's shoes, Car Shoe, luxury retail",
+    "competitor_keywords": [
+      "luxury fashion",
+      "luxury handbags",
+      "luxury ecommerce",
+      "DTC luxury",
+      "luxury resale platform"
+    ],
+    "side": "long"
+  },
+  "2742 JP": {
+    "name": "Halows Co Ltd",
+    "sector": "Supermarket Retail",
+    "products": "Halows supermarket chain (Chugoku region), fresh food, everyday groceries",
+    "competitor_keywords": [
+      "online grocery",
+      "grocery delivery",
+      "quick commerce",
+      "food delivery",
+      "dark store"
+    ],
+    "side": "long"
+  },
+  "6676 JP": {
+    "name": "Buffalo Inc /Japan",
+    "sector": "Computer Peripherals / Networking",
+    "products": "Wi-Fi routers, NAS storage, external drives, flash memory, networking equipment (Buffalo brand)",
+    "competitor_keywords": [
+      "networking equipment",
+      "NAS storage",
+      "WiFi router",
+      "smart home networking",
+      "mesh WiFi"
+    ],
+    "side": "long"
+  },
+  "6845 JP": {
+    "name": "Azbil Corp",
+    "sector": "Building Automation / Control",
+    "products": "Building automation systems (HVAC control), factory automation, life science instruments (process control)",
+    "competitor_keywords": [
+      "building automation",
+      "smart building",
+      "HVAC control",
+      "IoT building management",
+      "factory automation"
+    ],
+    "side": "long"
+  },
+  "1911 JP": {
+    "name": "Sumitomo Forestry Co Ltd",
+    "sector": "Forestry / Housing",
+    "products": "Custom-built wooden homes, timber/building materials, overseas housing, renewable energy, real estate",
+    "competitor_keywords": [
+      "prefab housing",
+      "modular homes",
+      "sustainable construction",
+      "mass timber",
+      "green building"
+    ],
+    "side": "long"
+  },
+  "3445 JP": {
+    "name": "RS Technologies Co Ltd",
+    "sector": "Semiconductor Materials",
+    "products": "Silicon wafer reclaim/repolishing, silicon parts for semiconductor equipment, SiC substrates",
+    "competitor_keywords": [
+      "silicon wafer",
+      "semiconductor materials",
+      "SiC substrate",
+      "wafer reclaim",
+      "compound semiconductor"
+    ],
+    "side": "long"
+  },
+  "6125 JP": {
+    "name": "Okamoto Machine Tool Works Ltd",
+    "sector": "Machine Tools",
+    "products": "Surface grinders, internal grinders, machining centers, semiconductor-related grinding machines",
+    "competitor_keywords": [
+      "machine tools",
+      "CNC grinding",
+      "precision machining",
+      "smart manufacturing",
+      "digital twin manufacturing"
+    ],
+    "side": "long"
+  },
+  "6745 JP": {
+    "name": "Hochiki Corp",
+    "sector": "Fire Safety Equipment",
+    "products": "Fire alarms, fire extinguishing systems, security systems, emergency communication systems",
+    "competitor_keywords": [
+      "fire safety",
+      "smart fire detection",
+      "IoT safety",
+      "connected building safety",
+      "fire prevention tech"
+    ],
+    "side": "long"
+  },
+  "6420 JP": {
+    "name": "Galilei Co Ltd",
+    "sector": "Commercial Refrigeration",
+    "products": "Commercial refrigerators/freezers, display cases for retail, cold chain equipment, kitchen equipment",
+    "competitor_keywords": [
+      "commercial refrigeration",
+      "cold chain technology",
+      "smart refrigeration",
+      "food retail equipment"
+    ],
+    "side": "long"
+  },
+  "2685 JP": {
+    "name": "and ST HD Co Ltd",
+    "sector": "Restaurants / Retail",
+    "products": "Point/restaurant chain, retail stores, food service, consumer brands",
+    "competitor_keywords": [
+      "restaurant tech",
+      "food delivery",
+      "ghost kitchen",
+      "QSR technology",
+      "food ordering platform"
+    ],
+    "side": "long"
+  },
+  "5715 JP": {
+    "name": "Furukawa Co Ltd",
+    "sector": "Mining / Metals / Machinery",
+    "products": "Mining, metals smelting (copper/gold), industrial machinery, rockdrill, chemical products, real estate",
+    "competitor_keywords": [
+      "mining technology",
+      "metals processing",
+      "mining automation",
+      "sustainable mining"
+    ],
+    "side": "long"
+  },
+  "6323 JP": {
+    "name": "Rorze Corp",
+    "sector": "Semiconductor Equipment",
+    "products": "Semiconductor wafer handling robots, EFEM (Equipment Front End Module), wafer sorters, transfer systems",
+    "competitor_keywords": [
+      "semiconductor automation",
+      "wafer handling",
+      "cleanroom robotics",
+      "fab automation",
+      "semiconductor robotics"
+    ],
+    "side": "long"
+  },
+  "7821 JP": {
+    "name": "Maeda Kosen Co Ltd",
+    "sector": "Industrial Materials / Geotextiles",
+    "products": "Civil engineering materials, geotextiles, erosion control, slope protection, environmental products",
+    "competitor_keywords": [
+      "geotextile",
+      "erosion control",
+      "sustainable civil engineering",
+      "green infrastructure"
+    ],
+    "side": "long"
+  },
+  "1847 JP": {
+    "name": "Ichiken Co Ltd",
+    "sector": "Construction",
+    "products": "Building construction, renovation, commercial facilities, condominiums, office buildings",
+    "competitor_keywords": [
+      "construction tech",
+      "renovation tech",
+      "modular construction",
+      "smart building"
+    ],
+    "side": "long"
+  },
+  "6340 JP": {
+    "name": "Shibuya Corp",
+    "sector": "Packaging Machinery",
+    "products": "Beverage filling/packaging systems, bottle-making machinery, water treatment, mechatronics",
+    "competitor_keywords": [
+      "packaging automation",
+      "bottling equipment",
+      "food processing machinery",
+      "packaging robotics"
+    ],
+    "side": "long"
+  },
+  "2001 JP": {
+    "name": "Nippn Corp",
+    "sector": "Flour Milling / Food",
+    "products": "Wheat flour, premixes, frozen food, pasta (Oh'my brand), healthcare food",
+    "competitor_keywords": [
+      "flour milling",
+      "frozen food",
+      "plant-based food",
+      "alternative protein",
+      "food manufacturing"
+    ],
+    "side": "long"
+  },
+  "JPY": {
+    "name": "JAPANESE YEN",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "long"
+  },
+  "1879 JP": {
+    "name": "Shinnihon Corp",
+    "sector": "Construction",
+    "products": "Building construction, renovation, seismic retrofitting, environmental solutions, real estate",
+    "competitor_keywords": [
+      "construction tech",
+      "seismic retrofitting",
+      "modular construction",
+      "renovation tech"
+    ],
+    "side": "long"
+  },
+  "8059 JP": {
+    "name": "Daiichi Jitsugyo Co Ltd",
+    "sector": "Industrial Trading",
+    "products": "Plant engineering, industrial machinery, electronic devices, automotive equipment, chemical products",
+    "competitor_keywords": [
+      "industrial marketplace",
+      "B2B trading platform",
+      "equipment as a service",
+      "industrial IoT"
+    ],
+    "side": "long"
+  },
+  "4783 JP": {
+    "name": "NCD Co Ltd/Shinagawa",
+    "sector": "IT Services / Parking",
+    "products": "Parking management systems, IT infrastructure services, system development, data center services",
+    "competitor_keywords": [
+      "smart parking",
+      "parking tech",
+      "IT services",
+      "IoT parking",
+      "automated parking"
+    ],
+    "side": "long"
+  },
+  "8052 JP": {
+    "name": "Tsubakimoto Kogyo Co Ltd",
+    "sector": "Industrial Distribution",
+    "products": "Power transmission equipment (chains/belts), factory supplies, machinery parts, MRO distribution",
+    "competitor_keywords": [
+      "MRO ecommerce",
+      "industrial supply marketplace",
+      "B2B procurement",
+      "smart maintenance"
+    ],
+    "side": "long"
+  },
+  "255A JP": {
+    "name": "GLTECHNO HOLDINGS INC",
+    "sector": "Technology / Recycling",
+    "products": "Technology services, recycling business, environmental solutions",
+    "competitor_keywords": [
+      "recycling tech",
+      "circular economy",
+      "waste management tech",
+      "environmental tech"
+    ],
+    "side": "long"
+  },
+  "9632 JP": {
+    "name": "Subaru Enterprise Co Ltd",
+    "sector": "Building Maintenance / Services",
+    "products": "Building maintenance, facility management, cleaning services, parking management, hotel operations",
+    "competitor_keywords": [
+      "facility management tech",
+      "smart building maintenance",
+      "property tech",
+      "cleaning robotics"
+    ],
+    "side": "long"
+  },
+  "5351 JP": {
+    "name": "Shinagawa Refra Co Ltd",
+    "sector": "Refractories",
+    "products": "Refractory products for steel/cement/glass industries, ceramic fiber, monolithic refractories, engineering",
+    "competitor_keywords": [
+      "refractory materials",
+      "high-temperature materials",
+      "advanced ceramics",
+      "industrial furnace materials"
+    ],
+    "side": "long"
+  },
+  "3321 JP": {
+    "name": "Mitachi Co Ltd",
+    "sector": "Electronics Distribution",
+    "products": "Semiconductor devices, electronic components, FA equipment, optical communication devices",
+    "competitor_keywords": [
+      "semiconductor distribution",
+      "electronic components marketplace",
+      "IoT supply chain"
+    ],
+    "side": "long"
+  },
+  "5889 JP": {
+    "name": "Japan Eyewear Holdings Co Ltd",
+    "sector": "Eyewear",
+    "products": "Eyeglass frames (Sabae/Fukui manufacturing), eyewear brand management, optical retail",
+    "competitor_keywords": [
+      "eyewear DTC",
+      "online eyewear",
+      "smart glasses",
+      "prescription eyewear online"
+    ],
+    "side": "long"
+  },
+  "7520 JP": {
+    "name": "Eco's Co Ltd/Japan",
+    "sector": "Supermarket Retail",
+    "products": "Eco's/Tairaya supermarket chain (Kanto), fresh food, everyday groceries",
+    "competitor_keywords": [
+      "online grocery",
+      "grocery delivery",
+      "quick commerce",
+      "food delivery",
+      "dark store"
+    ],
+    "side": "long"
+  },
+  "8704 JP": {
+    "name": "Traders Holdings Co Ltd",
+    "sector": "Online Securities",
+    "products": "Online FX trading, securities brokerage, financial derivatives trading",
+    "competitor_keywords": [
+      "online trading",
+      "FX platform",
+      "retail trading",
+      "crypto trading",
+      "social trading"
+    ],
+    "side": "long"
+  },
+  "2222 JP": {
+    "name": "Kotobuki Spirits Co Ltd",
+    "sector": "Spirits / Beverages",
+    "products": "Shochu spirits, liqueurs, sake, fruit wines, soft drinks",
+    "competitor_keywords": [
+      "craft spirits",
+      "DTC alcohol",
+      "premium spirits",
+      "RTD beverages",
+      "non-alcoholic spirits"
+    ],
+    "side": "long"
+  },
+  "7326 JP": {
+    "name": "SBI Insurance Group Co Ltd",
+    "sector": "Insurance",
+    "products": "Online life insurance, insurance comparison platform, small-amount short-term insurance",
+    "competitor_keywords": [
+      "insurtech",
+      "online insurance",
+      "embedded insurance",
+      "insurance comparison",
+      "digital insurance"
+    ],
+    "side": "long"
+  },
+  "7740 JP": {
+    "name": "Tamron Co Ltd",
+    "sector": "Optical Equipment",
+    "products": "Camera lenses (interchangeable), surveillance camera lenses, automotive camera lenses, drone lenses",
+    "competitor_keywords": [
+      "camera lens",
+      "machine vision lens",
+      "automotive camera",
+      "surveillance optics",
+      "computational photography"
+    ],
+    "side": "long"
+  },
+  "7864 JP": {
+    "name": "Fuji Seal International Inc",
+    "sector": "Packaging",
+    "products": "Shrink sleeve labels, shrink packaging, packaging systems, pouch packaging, overseas packaging",
+    "competitor_keywords": [
+      "sustainable packaging",
+      "shrink labels",
+      "smart packaging",
+      "eco-friendly packaging"
+    ],
+    "side": "long"
+  },
+  "4318 JP": {
+    "name": "Quick Co Ltd",
+    "sector": "HR / Information Services",
+    "products": "Human resource services, staffing/recruitment, information services, temporary staffing",
+    "competitor_keywords": [
+      "HR tech",
+      "recruitment platform",
+      "staffing marketplace",
+      "AI recruiting",
+      "talent platform"
+    ],
+    "side": "long"
+  },
+  "3679 JP": {
+    "name": "ZIGExN Co Ltd",
+    "sector": "Internet / Marketplace",
+    "products": "Job search platform, real estate search, car search, lifestyle comparison services (ZIGExN)",
+    "competitor_keywords": [
+      "job marketplace",
+      "real estate search",
+      "online classifieds",
+      "vertical search platform"
+    ],
+    "side": "long"
+  },
+  "4743 JP": {
+    "name": "Itfor Inc",
+    "sector": "IT Services",
+    "products": "Financial IT systems, card payment systems, enterprise software, system integration, BPO",
+    "competitor_keywords": [
+      "payment technology",
+      "fintech",
+      "card processing",
+      "financial IT",
+      "SaaS"
+    ],
+    "side": "long"
+  },
+  "9702 JP": {
+    "name": "ISB Corp",
+    "sector": "IT Services / Software",
+    "products": "System integration, embedded software, enterprise solutions, IT outsourcing, mobile app development",
+    "competitor_keywords": [
+      "IT services",
+      "system integration",
+      "low-code platform",
+      "digital transformation",
+      "SaaS"
+    ],
+    "side": "long"
+  },
+  "7839 JP": {
+    "name": "Shoei Co Ltd",
+    "sector": "Motorcycle Helmets / Safety",
+    "products": "Premium motorcycle helmets (Shoei brand), safety gear, global motorcycle accessories",
+    "competitor_keywords": [
+      "motorcycle helmet",
+      "smart helmet",
+      "connected helmet",
+      "safety wearable",
+      "HUD helmet"
+    ],
+    "side": "long"
+  },
+  "9739 JP": {
+    "name": "NSW Inc/Japan",
+    "sector": "IT Services / Software",
+    "products": "Embedded software development, enterprise systems, manufacturing IT, telecom systems, IoT solutions",
+    "competitor_keywords": [
+      "embedded software",
+      "IoT platform",
+      "manufacturing IT",
+      "edge computing",
+      "digital twin"
+    ],
+    "side": "long"
+  },
+  "4251 JP": {
+    "name": "KEIWA Inc",
+    "sector": "Functional Films / Materials",
+    "products": "Optical films for LCD/OLED displays, diffusion sheets, cushioning materials, semiconductor tape",
+    "competitor_keywords": [
+      "optical film",
+      "display materials",
+      "functional film",
+      "semiconductor tape",
+      "OLED materials"
+    ],
+    "side": "long"
+  },
+  "2801 JP": {
+    "name": "Kikkoman Corp",
+    "sector": "Food / Condiments",
+    "products": "Soy sauce, teriyaki sauce, food seasonings, soy milk, Del Monte canned foods, Oriental Trading",
+    "competitor_keywords": [
+      "soy sauce",
+      "Asian condiments",
+      "plant-based food",
+      "DTC food brand",
+      "specialty sauce"
+    ],
+    "side": "long"
+  },
+  "8935 JP": {
+    "name": "FJ Next Holdings Co Ltd",
+    "sector": "Real Estate / Condominiums",
+    "products": "Investment condominiums for individuals, property management, real estate fund management",
+    "competitor_keywords": [
+      "proptech",
+      "real estate crowdfunding",
+      "investment property platform",
+      "condo marketplace"
+    ],
+    "side": "long"
+  },
+  "9823 JP": {
+    "name": "Mammy Mart Holdings Corp",
+    "sector": "Supermarket Retail",
+    "products": "Mammy Mart supermarket chain (Saitama/Kanto), fresh food, daily necessities",
+    "competitor_keywords": [
+      "online grocery",
+      "grocery delivery",
+      "quick commerce",
+      "food delivery",
+      "dark store"
+    ],
+    "side": "long"
+  },
+  "1867 JP": {
+    "name": "Ueki Corp",
+    "sector": "Construction / Civil Engineering",
+    "products": "Civil engineering, building construction, ground improvement, infrastructure maintenance, real estate",
+    "competitor_keywords": [
+      "construction tech",
+      "infrastructure maintenance",
+      "ground improvement",
+      "construction robotics"
+    ],
+    "side": "long"
+  },
+  "8043 JP": {
+    "name": "Starzen Co Ltd",
+    "sector": "Meat / Food Distribution",
+    "products": "Meat processing (beef/pork), meat wholesale/distribution, imported meat, deli products",
+    "competitor_keywords": [
+      "meat processing",
+      "alternative protein",
+      "plant-based meat",
+      "cultured meat",
+      "food distribution tech"
+    ],
+    "side": "long"
+  },
+  "3333 JP": {
+    "name": "Asahi Co Ltd",
+    "sector": "Bicycle / Sports Retail",
+    "products": "Bicycle retail (Asahi Bicycle), cycling accessories, bicycle repair, fitness equipment",
+    "competitor_keywords": [
+      "bicycle retail",
+      "e-bike",
+      "bike sharing",
+      "micro-mobility",
+      "DTC bicycle"
+    ],
+    "side": "long"
+  },
+  "7952 JP": {
+    "name": "Kawai Musical Instruments Manufacturing Co Ltd",
+    "sector": "Musical Instruments",
+    "products": "Pianos (grand/upright/digital), electronic keyboards, music education, sound technology",
+    "competitor_keywords": [
+      "digital piano",
+      "music education tech",
+      "online music learning",
+      "electronic instruments",
+      "music streaming"
+    ],
+    "side": "long"
+  },
+  "9628 JP": {
+    "name": "San Holdings Inc",
+    "sector": "Building Maintenance / Staffing",
+    "products": "Building maintenance, security services, staffing, facility management, property management",
+    "competitor_keywords": [
+      "facility management tech",
+      "smart building",
+      "security tech",
+      "cleaning robotics"
+    ],
+    "side": "long"
+  },
+  "3762 JP": {
+    "name": "TechMatrix Corp",
+    "sector": "IT Solutions / Cybersecurity",
+    "products": "Network security solutions, cloud security, medical IT systems, application/platform solutions",
+    "competitor_keywords": [
+      "cybersecurity",
+      "cloud security",
+      "medical IT",
+      "security as a service",
+      "zero trust"
+    ],
+    "side": "long"
+  },
+  "7725 JP": {
+    "name": "Inter Action Corp",
+    "sector": "Semiconductor Equipment",
+    "products": "Light source equipment for semiconductor inspection, LED inspection, solar simulators",
+    "competitor_keywords": [
+      "semiconductor inspection",
+      "optical inspection",
+      "LED inspection",
+      "light source equipment"
+    ],
+    "side": "long"
+  },
+  "9273 JP": {
+    "name": "Koa Shoji Holdings Co Ltd",
+    "sector": "Electronics Distribution",
+    "products": "Electronic components distribution, semiconductor distribution, device programming services",
+    "competitor_keywords": [
+      "electronic component marketplace",
+      "semiconductor distribution",
+      "IoT components",
+      "supply chain tech"
+    ],
+    "side": "long"
+  },
+  "9896 JP": {
+    "name": "JK Holdings Co Ltd",
+    "sector": "Industrial Trading / Distribution",
+    "products": "Automotive parts distribution, industrial supplies, housing equipment, logistics services",
+    "competitor_keywords": [
+      "auto parts marketplace",
+      "industrial supply marketplace",
+      "B2B distribution tech"
+    ],
+    "side": "long"
+  },
+  "7235 JP": {
+    "name": "Tokyo Radiator Manufacturing Co Ltd",
+    "sector": "Auto Parts",
+    "products": "Automotive radiators, EGR coolers, oil coolers, EV thermal management, heat exchangers",
+    "competitor_keywords": [
+      "EV thermal management",
+      "automotive cooling",
+      "heat exchanger",
+      "EV battery cooling"
+    ],
+    "side": "long"
+  },
+  "9709 JP": {
+    "name": "NCS&A Co Ltd",
+    "sector": "IT Services",
+    "products": "Business systems development, ERP consulting, cloud services, IT infrastructure management",
+    "competitor_keywords": [
+      "IT services",
+      "ERP",
+      "cloud services",
+      "digital transformation",
+      "SaaS platform"
+    ],
+    "side": "long"
+  },
+  "6333 JP": {
+    "name": "Teikoku Electric Manufacturing Co Ltd",
+    "sector": "Electric Equipment / Motors",
+    "products": "Motors, pumps, power generators, ship automation systems, industrial fans, environmental equipment",
+    "competitor_keywords": [
+      "electric motor",
+      "industrial pump",
+      "energy-efficient motor",
+      "marine automation"
+    ],
+    "side": "long"
+  },
+  "5363 JP": {
+    "name": "TYK Corp/Tokyo",
+    "sector": "Refractories / Ceramics",
+    "products": "Refractory products, fine ceramics, kiln furniture, functional ceramics for semiconductor/energy",
+    "competitor_keywords": [
+      "refractory",
+      "fine ceramics",
+      "advanced ceramics",
+      "high-temperature materials"
+    ],
+    "side": "long"
+  },
+  "7191 JP": {
+    "name": "Entrust Inc",
+    "sector": "Insurance / Financial Agency",
+    "products": "Insurance agency services, financial product distribution, insurance consulting, Entrust brand",
+    "competitor_keywords": [
+      "insurtech",
+      "insurance marketplace",
+      "digital insurance",
+      "embedded insurance"
+    ],
+    "side": "long"
+  },
+  "4231 JP": {
+    "name": "Tigers Polymer Corp",
+    "sector": "Rubber / Polymer Products",
+    "products": "Industrial hoses, automotive hoses, rubber sheets, polyurethane products, antivibration rubber",
+    "competitor_keywords": [
+      "industrial hose",
+      "automotive rubber parts",
+      "polymer products",
+      "EV rubber components"
+    ],
+    "side": "long"
+  },
+  "6040 JP": {
+    "name": "Nippon Ski Resort Development Co Ltd",
+    "sector": "Tourism / Ski Resorts",
+    "products": "Ski resort operations, tourism/leisure facilities, resort hotels, mountain tourism",
+    "competitor_keywords": [
+      "travel tech",
+      "ski resort tech",
+      "tourism platform",
+      "outdoor recreation",
+      "experience booking"
+    ],
+    "side": "long"
+  },
+  "6670 JP": {
+    "name": "MCJ Co Ltd",
+    "sector": "PC / Electronics",
+    "products": "Desktop PCs (mouse brand), gaming PCs, peripherals, iiyama monitors, EMS services",
+    "competitor_keywords": [
+      "PC manufacturing",
+      "gaming PC",
+      "custom PC",
+      "direct-to-consumer electronics"
+    ],
+    "side": "long"
+  },
+  "KMX": {
+    "name": "CarMax Inc",
+    "sector": "Used Car Retail",
+    "products": "Used car retail superstores, auto financing, wholesale auctions, online car buying",
+    "competitor_keywords": [
+      "online car sales",
+      "used car marketplace",
+      "auto ecommerce",
+      "digital car dealer",
+      "car subscription"
+    ],
+    "side": "short"
+  },
+  "BN": {
+    "name": "Brookfield Corp",
+    "sector": "Alternative Asset Management",
+    "products": "Infrastructure investing, real estate, private equity, renewable energy, credit, insurance",
+    "competitor_keywords": [
+      "alternative asset management",
+      "infrastructure investing",
+      "private equity platform",
+      "tokenized real estate"
+    ],
+    "side": "short"
+  },
+  "WFC": {
+    "name": "Wells Fargo & Co",
+    "sector": "Banking",
+    "products": "Consumer banking, commercial banking, mortgage lending, wealth management, credit cards",
+    "competitor_keywords": [
+      "digital bank",
+      "neobank",
+      "fintech lending",
+      "digital mortgage",
+      "BNPL",
+      "embedded finance"
+    ],
+    "side": "short"
+  },
+  "TCPC": {
+    "name": "BlackRock TCP Capital Corp",
+    "sector": "Business Development Company",
+    "products": "Direct lending to middle-market tech/venture companies, mezzanine debt, equity investments",
+    "competitor_keywords": [
+      "direct lending",
+      "venture debt",
+      "private credit",
+      "fintech lending platform"
+    ],
+    "side": "short"
+  },
+  "CVNA": {
+    "name": "Carvana Co",
+    "sector": "Online Used Car Sales",
+    "products": "Online car buying/selling platform, auto financing, vehicle delivery, car vending machines",
+    "competitor_keywords": [
+      "online car sales",
+      "used car marketplace",
+      "auto ecommerce",
+      "digital car dealer",
+      "car subscription"
+    ],
+    "side": "short"
+  },
+  "DLR": {
+    "name": "Digital Realty Trust Inc",
+    "sector": "Data Center REIT",
+    "products": "Colocation data centers, interconnection, managed hosting, hyperscale data centers",
+    "competitor_keywords": [
+      "data center",
+      "colocation",
+      "edge computing",
+      "cloud infrastructure",
+      "AI data center"
+    ],
+    "side": "short"
+  },
+  "TPVG": {
+    "name": "TriplePoint Venture Growth BDC Corp",
+    "sector": "Venture Lending BDC",
+    "products": "Venture growth stage lending, equipment financing, direct equity investments in tech startups",
+    "competitor_keywords": [
+      "venture debt",
+      "growth lending",
+      "startup lending",
+      "revenue-based financing"
+    ],
+    "side": "short"
+  },
+  "RWAY": {
+    "name": "Runway Growth Finance Corp",
+    "sector": "Growth Stage BDC",
+    "products": "Senior secured lending to growth-stage companies, term loans, revolving credit",
+    "competitor_keywords": [
+      "growth lending",
+      "venture debt",
+      "revenue-based financing",
+      "startup lending"
+    ],
+    "side": "short"
+  },
+  "OXLC": {
+    "name": "Oxford Lane Capital Corp",
+    "sector": "CLO Fund",
+    "products": "CLO equity/debt tranches, leveraged loan investments, structured credit",
+    "competitor_keywords": [
+      "CLO",
+      "structured credit",
+      "leveraged lending",
+      "private credit platform"
+    ],
+    "side": "short"
+  },
+  "SBUX": {
+    "name": "Starbucks Corp",
+    "sector": "Coffee / Quick Service Restaurant",
+    "products": "Coffee shops, specialty coffee drinks, food items, packaged coffee, mobile ordering",
+    "competitor_keywords": [
+      "specialty coffee",
+      "coffee chain",
+      "coffee delivery",
+      "DTC coffee",
+      "automated coffee"
+    ],
+    "side": "short"
+  },
+  "PSEC": {
+    "name": "Prospect Capital Corp",
+    "sector": "Business Development Company",
+    "products": "Middle market lending, real estate lending, structured credit, online lending",
+    "competitor_keywords": [
+      "direct lending",
+      "middle market lending",
+      "private credit",
+      "online lending platform"
+    ],
+    "side": "short"
+  },
+  "MSOS": {
+    "name": "AdvisorShares Pure US Cannabis ETF",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "short"
+  },
+  "SDIV": {
+    "name": "Global X SuperDividend ETF",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "short"
+  },
+  "IWM": {
+    "name": "iShares Russell 2000 ETF",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "short"
+  },
+  "QQQ": {
+    "name": "Invesco QQQ Trust Series 1",
+    "sector": "",
+    "products": "",
+    "competitor_keywords": [],
+    "side": "short"
+  }
+}

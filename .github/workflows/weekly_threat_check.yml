@@ -1,0 +1,62 @@
+name: Weekly Competitive Threat Check
+
+on:
+  # Run every Monday at 3:00 PM UTC (9:00 AM CT)
+  schedule:
+    - cron: '0 15 * * 1'
+
+  # Allow manual trigger with test mode option
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (only email ardal@militiainv.com)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  threat-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run competitive threat analysis (production)
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.test_mode == 'false' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          python competitive_threat_tracker.py \
+            --holdings holdings/liquidity_check_latest.xlsx \
+            --csv-dir private_company_data \
+            --portfolio-name "Militia" \
+            --email
+
+      - name: Run competitive threat analysis (test mode)
+        if: ${{ github.event.inputs.test_mode == 'true' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          python competitive_threat_tracker.py \
+            --holdings holdings/liquidity_check_latest.xlsx \
+            --csv-dir private_company_data \
+            --portfolio-name "Militia" \
+            --email \
+            --test

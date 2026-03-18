@@ -1,0 +1,23 @@
+# Competitive Threat Tracker Configuration
+
+# Email recipients
+email_to_always: "ardal@militiainv.com"          # Always receives (test + production)
+email_to_production:                               # Only in production mode
+  - "sam@militiainv.com"
+  - "danny@militiacapital.com"
+
+# Email settings
+email_subject: "Weekly Competitive Threat Digest"
+email_from_name: "Militia Threat Tracker"
+
+# Portfolio settings
+portfolio_name: "Militia"
+
+# Holdings file (relative path or absolute)
+holdings_file: "holdings/liquidity_check_latest.xlsx"
+
+# Private company CSV directory
+csv_dir: "private_company_data"
+
+# Output directory
+output_dir: "output"
