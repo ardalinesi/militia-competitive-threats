@@ -81,43 +81,45 @@ def build_email_html(threats, portfolio_name, date_str):
             .score-5 {{ color: #b71c1c; font-weight: bold; }}
             .short-tag {{ background-color: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }}
             .long-tag {{ background-color: #fff3e0; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
+            .evidence-high {{ color: #d32f2f; font-weight: bold; }}
+            .evidence-low {{ color: #666; }}
             .summary {{ background-color: #f5f5f5; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }}
             .footer {{ color: #999; font-size: 11px; margin-top: 24px; }}
         </style>
     </head>
     <body>
-        <h1>Competitive Threat Digest &mdash; {portfolio_name}</h1>
+        <h1>Disruption Monitor &mdash; {portfolio_name}</h1>
         <p><strong>Date:</strong> {date_str}</p>
     """
     # Add the summary section with threat counts
     total_threats = len(threats)
-    # Count unique holdings that have threats
-    unique_holdings = len(set(t.get("holding_ticker", "") for t in threats))
+    # Count unique threatened public companies from the CSV data
+    unique_targets = len(set(t.get("threatened_ticker", t.get("holding_ticker", "")) for t in threats))
     # Count threats to short positions (portfolio-positive)
     short_threats = sum(1 for t in threats if t.get("holding_side") == "short")
     # Build the summary box
     html += f"""
         <div class="summary">
-            <strong>Total threats identified:</strong> {total_threats} &nbsp;|&nbsp;
-            <strong>Holdings affected:</strong> {unique_holdings} &nbsp;|&nbsp;
+            <strong>Total threat pairs:</strong> {total_threats} &nbsp;|&nbsp;
+            <strong>Public companies threatened:</strong> {unique_targets} &nbsp;|&nbsp;
             <strong>Short position threats (portfolio-positive):</strong> {short_threats}
         </div>
     """
     # Check if there are any threats to display
     if threats:
-        # Add the threats table header
+        # Add the threats table header with updated column names for the new pipeline
         html += """
         <h2>Identified Threats</h2>
         <table>
             <tr>
-                <th>Holding</th>
+                <th>Startup (Disruptor)</th>
+                <th>Target Company</th>
                 <th>Side</th>
-                <th>Threat Company</th>
                 <th>Score</th>
                 <th>Type</th>
                 <th>Reasoning</th>
-                <th>Threat Growth</th>
-                <th>Threat Funding</th>
+                <th>Evidence</th>
+                <th>Startup Growth</th>
             </tr>
         """
         # Loop through each threat to add a table row
@@ -131,27 +133,51 @@ def build_email_html(threats, portfolio_name, date_str):
             # Determine the CSS class for the score color
             score_class = f"score-{score}" if str(score) in "12345" else ""
             # Determine the side tag (short = green/positive, long = orange/warning)
-            side = t.get("holding_side", "long")
-            # Build the side tag HTML
+            side = t.get("holding_side", "")
+            # Build the side tag HTML based on the position side
             if side == "short":
                 # Short positions: threats are portfolio-positive
                 side_html = '<span class="short-tag">SHORT &#x2714;</span>'
-            else:
+            elif side == "long":
                 # Long positions: threats are a concern
                 side_html = '<span class="long-tag">LONG</span>'
-            # Build the holding display name
-            holding = f"{t.get('holding_name', '')} ({t.get('holding_ticker', '')})"
+            else:
+                # No portfolio position (broad market view)
+                side_html = '<span style="color: #999;">—</span>'
+            # Get the startup name (the disruptor)
+            startup_name = t.get("startup_name", t.get("threat_company", ""))
+            # Get the threatened public company name and ticker
+            target_ticker = t.get("threatened_ticker", t.get("holding_ticker", ""))
+            # Get the target company name
+            target_name = t.get("threatened_company", t.get("holding_name", ""))
+            # Build the target company display string
+            target_display = f"{target_name} ({target_ticker})" if target_name else target_ticker
+            # Get the evidence strength score if available
+            ev_strength = t.get("evidence_strength", "")
+            # Build the evidence display string
+            if ev_strength:
+                # Determine the CSS class based on evidence strength
+                ev_class = "evidence-high" if int(ev_strength) >= 3 else "evidence-low"
+                # Format the evidence score
+                ev_html = f'<span class="{ev_class}">{ev_strength}/5</span>'
+            else:
+                # No evidence data available
+                ev_html = "N/A"
+            # Get startup growth rate for display
+            growth = t.get("startup_growth", t.get("threat_growth", ""))
+            # Format the growth display
+            growth_display = f"{growth}%" if growth else "N/A"
             # Add this threat as a table row
             html += f"""
             <tr>
-                <td>{holding}</td>
+                <td><strong>{startup_name}</strong></td>
+                <td>{target_display}</td>
                 <td>{side_html}</td>
-                <td><strong>{t.get('threat_company', '')}</strong></td>
                 <td class="{score_class}">{score}/5 ({severity})</td>
                 <td>{t.get('threat_type', '')}</td>
                 <td>{t.get('reasoning', '')}</td>
-                <td>{t.get('threat_growth', '') + '%' if t.get('threat_growth') else 'N/A'}</td>
-                <td>{t.get('threat_funding', '') if t.get('threat_funding') else 'N/A'}</td>
+                <td>{ev_html}</td>
+                <td>{growth_display}</td>
             </tr>
             """
         # Close the table
@@ -163,7 +189,7 @@ def build_email_html(threats, portfolio_name, date_str):
     # Add the attachment note and footer
     html += """
         <p style="margin-top: 16px;"><em>See attached CSV for full details.</em></p>
-        <p class="footer">Generated by Competitive Threat Tracker</p>
+        <p class="footer">Generated by Disruption Monitor</p>
     </body>
     </html>
     """

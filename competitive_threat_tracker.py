@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Competitive Threat Tracker MVP
-Cross-references portfolio holdings against fast-growing private companies,
-then uses the Anthropic API to identify genuine competitive threats.
+Disruption Monitor — Competitive Threat Tracker
+Starts from a startup universe, maps each startup to the public companies
+it threatens, gathers financial evidence, then optionally filters to
+portfolio holdings.
 """
 
 # Import argparse to handle command-line arguments
 import argparse
 
-# Import json for reading and writing JSON files
+# Import json for reading and writing JSON data
 import json
 
 # Import csv for writing the threats output CSV
@@ -37,6 +38,17 @@ EXCLUDED_TICKERS = {"Cash&Other", "JPY", "FGXXX"}
 # Define keywords that identify ETFs and index funds by name (case-insensitive matching)
 ETF_NAME_KEYWORDS = ["etf", "ishares", "invesco", "advisorshares", "spdr", "vanguard", "index fund"]
 
+# Define keywords used to identify software/SaaS/tech companies for the --scope software filter
+SOFTWARE_SCOPE_KEYWORDS = [
+    "software", "saas", "cloud", "platform", "app", "digital", "tech",
+    "ai", "artificial intelligence", "machine learning", "data", "analytics",
+    "automation", "cybersecurity", "cyber", "devops", "api", "fintech",
+    "edtech", "healthtech", "martech", "adtech", "regtech", "insurtech",
+    "blockchain", "crypto", "iot", "internet of things", "robotics",
+    "computer", "computing", "web", "mobile", "streaming", "e-commerce",
+    "ecommerce", "payment", "neobank", "digital bank",
+]
+
 
 # Define a function to check if a holding is an ETF, cash, currency, or other non-operating entity
 def is_excluded_holding(ticker, name=""):
@@ -54,6 +66,7 @@ def is_excluded_holding(ticker, name=""):
             return True
     # This holding is a real operating company, don't exclude it
     return False
+
 
 # Try importing openpyxl for reading Excel files
 try:
@@ -75,12 +88,21 @@ except ImportError:
     # Set Anthropic to None so we can check later if it's available
     Anthropic = None
 
+# Try importing yfinance for financial data lookups
+try:
+    # Import yfinance to pull earnings, revenue, analyst recommendations, and price data
+    import yfinance as yf
+# Catch the import error if yfinance is not installed
+except ImportError:
+    # Set yf to None so we can check later if it's available
+    yf = None
+
 
 # Define a function to parse and return command-line arguments
 def parse_args():
     # Create an argument parser with a description of the script's purpose
     parser = argparse.ArgumentParser(
-        description="Competitive Threat Tracker: Identify threats to portfolio holdings from private companies"
+        description="Disruption Monitor: Identify threats to public companies from fast-growing startups"
     )
     # Add a required argument for the path to the Excel holdings file
     parser.add_argument(
@@ -94,23 +116,11 @@ def parse_args():
         default=None,
         help="Directory containing private company CSV files",
     )
-    # Add an optional argument for the path to the competitive profiles JSON file
-    parser.add_argument(
-        "--profiles",
-        default="holdings_competitive_profile.json",
-        help="Path to the holdings competitive profile JSON file (default: holdings_competitive_profile.json)",
-    )
     # Add an optional argument for the directory where output reports will be saved
     parser.add_argument(
         "--output-dir",
         default="output",
         help="Directory for output files (default: output/)",
-    )
-    # Add a flag that generates the competitive profile template and exits without analysis
-    parser.add_argument(
-        "--holdings-only",
-        action="store_true",
-        help="Only generate the competitive profile template JSON, then exit",
     )
     # Add a flag that shows API prompts without actually calling the API
     parser.add_argument(
@@ -141,6 +151,38 @@ def parse_args():
         "--config",
         default="config.yaml",
         help="Path to config.yaml (default: config.yaml)",
+    )
+    # Add the scope flag to filter startups by type (software-only vs all)
+    parser.add_argument(
+        "--scope",
+        default="software",
+        choices=["software", "all"],
+        help="Filter startups to software/SaaS/tech only (default) or include all industries",
+    )
+    # Add the startups-per-batch flag to control how many startups are sent per API call
+    parser.add_argument(
+        "--startups-per-batch",
+        type=int,
+        default=20,
+        help="Number of startups to send per API call (default: 20)",
+    )
+    # Add a flag to skip the financial evidence stage entirely for faster testing
+    parser.add_argument(
+        "--skip-evidence",
+        action="store_true",
+        help="Skip Stage 3 (financial evidence) entirely for faster testing",
+    )
+    # Add a flag to enable the optional Claude + web search qualitative overlay
+    parser.add_argument(
+        "--qualitative",
+        action="store_true",
+        help="Enable Stage 3b: Claude + web search qualitative overlay on top of yfinance data",
+    )
+    # Add a flag to skip the holdings filter and only produce the broad market report
+    parser.add_argument(
+        "--broad-only",
+        action="store_true",
+        help="Skip the holdings filter and only produce the broad market report",
     )
     # Parse the arguments the user provided on the command line
     args = parser.parse_args()
@@ -276,92 +318,6 @@ def read_holdings(filepath):
     return holdings
 
 
-# Define a function to generate a competitive profile JSON template from holdings
-def generate_profile_template(holdings, output_path):
-    # Initialize an empty dictionary for the template we'll build
-    template = {}
-    # Initialize an empty dictionary for any existing profile data to preserve
-    existing = {}
-    # Check if a profile file already exists at the output path
-    if os.path.exists(output_path):
-        # Try to load the existing file to preserve user-entered data
-        try:
-            # Open the existing file for reading
-            with open(output_path, "r") as f:
-                # Parse the JSON content into a dictionary
-                existing = json.load(f)
-            # Print a message that we found and loaded existing data
-            print(f"  Found existing profile file with {len(existing)} entries")
-        # Catch JSON parsing errors or file read errors
-        except (json.JSONDecodeError, IOError):
-            # Print a warning that the existing file was unreadable
-            print(f"  Warning: Could not parse existing profile file, creating fresh template")
-    # Loop through each holding to create or preserve its template entry
-    for h in holdings:
-        # Get the ticker symbol as the dictionary key
-        ticker = h["ticker"]
-        # Skip ETFs, cash, currency, and money market funds — they don't face competitive threats
-        if is_excluded_holding(ticker, h.get("name", "")):
-            # Continue to the next holding
-            continue
-        # Check if this ticker already has a profile in the existing file
-        if ticker in existing:
-            # Preserve the existing entry without overwriting user-entered data
-            template[ticker] = existing[ticker]
-        # If the ticker is new, create a blank template entry
-        else:
-            # Create a skeleton entry with name and side pre-populated
-            template[ticker] = {
-                "name": h["name"],
-                "sector": "",
-                "products": "",
-                "competitor_keywords": [],
-                "side": h["side"],
-            }
-    # Open the output file for writing the complete template
-    with open(output_path, "w") as f:
-        # Write the template as pretty-printed JSON with 2-space indentation
-        json.dump(template, f, indent=2)
-    # Count how many entries are new (no sector filled in yet)
-    new_count = sum(1 for t in template.values() if not t.get("sector"))
-    # Count how many entries already have user-entered data
-    filled_count = len(template) - new_count
-    # Print where the template was saved
-    print(f"  Profile template written to: {output_path}")
-    # Print the count of filled vs new entries
-    print(f"  {filled_count} profiles already filled in, {new_count} entries need data")
-    # Return the template dictionary
-    return template
-
-
-# Define a function to read filled-in competitive profiles from the JSON file
-def read_competitive_profiles(filepath):
-    # Check if the profiles file exists on disk
-    if not os.path.exists(filepath):
-        # Print a message that no profiles file was found
-        print(f"  No competitive profile file found at: {filepath}")
-        # Return an empty dictionary since there's nothing to load
-        return {}
-    # Try to open and parse the JSON profiles file
-    try:
-        # Open the file for reading
-        with open(filepath, "r") as f:
-            # Parse the JSON content into a dictionary
-            profiles = json.load(f)
-    # Catch JSON parsing errors or file read errors
-    except (json.JSONDecodeError, IOError) as e:
-        # Print the error details
-        print(f"  Error reading profile file: {e}")
-        # Return an empty dictionary
-        return {}
-    # Filter to only include profiles that have a sector AND are not ETFs/cash/currency
-    filled = {k: v for k, v in profiles.items() if v.get("sector") and not is_excluded_holding(k, v.get("name", ""))}
-    # Print how many usable profiles were found out of the total
-    print(f"  Loaded {len(filled)} filled competitive profiles (out of {len(profiles)} total)")
-    # Return only the profiles that have been filled in by the user
-    return filled
-
-
 # Define a function that maps CSV column headers to standardized field names
 def detect_csv_columns(headers):
     # Define regex patterns to match for each standard field we want to extract
@@ -485,226 +441,38 @@ def read_private_companies(csv_dir):
     return all_companies
 
 
-# Define a function to filter private companies by keyword relevance to a holding
-def filter_companies_by_keywords(companies, keywords):
-    # If there are no keywords to match against, return nothing
-    if not keywords:
-        # Return an empty list
-        return []
-    # Convert all keywords to lowercase for case-insensitive matching
-    keywords_lower = [kw.lower() for kw in keywords]
-    # Initialize a list to store companies that match at least one keyword
-    matches = []
-    # Loop through each private company to check for keyword matches
+# Define a function to filter startups to software/SaaS/tech companies based on the scope setting
+def filter_startups_by_scope(companies, scope):
+    # If scope is "all", return all companies without filtering
+    if scope == "all":
+        # Print a message that no scope filter is applied
+        print(f"  Scope: all — keeping all {len(companies)} startups")
+        # Return the unfiltered list
+        return companies
+    # Initialize a list to store companies that match the software scope
+    filtered = []
+    # Loop through each company to check if it's in the software/tech space
     for company in companies:
-        # Build a single searchable text blob from the company's key text fields
+        # Build a searchable text blob from the company's industry and description fields
         searchable = " ".join([
-            company.get("company_name", ""),
             company.get("industry", ""),
             company.get("description", ""),
+            company.get("company_name", ""),
         ]).lower()
-        # Check if any of the keywords appear in the searchable text
-        matched = any(kw in searchable for kw in keywords_lower)
-        # If the company matched at least one keyword, keep it
+        # Check if any software/tech keyword appears in the searchable text
+        matched = any(kw in searchable for kw in SOFTWARE_SCOPE_KEYWORDS)
+        # If the company matches at least one keyword, keep it
         if matched:
-            # Add the matching company to our results list
-            matches.append(company)
-    # Return the filtered list of relevant companies
-    return matches
+            # Add the matching company to our filtered list
+            filtered.append(company)
+    # Print how many companies passed the scope filter
+    print(f"  Scope: software — filtered {len(companies)} startups down to {len(filtered)} software/SaaS/tech companies")
+    # Return the filtered list of software-relevant startups
+    return filtered
 
 
-# Define a mapping from granular sector names to broad super-sectors for batching
-SECTOR_TO_SUPERSECTOR = {
-    # Technology / Semiconductors
-    "Semiconductors": "Technology & Semiconductors",
-    "Semiconductor Equipment": "Technology & Semiconductors",
-    "Semiconductor Materials": "Technology & Semiconductors",
-    "Electronic Components": "Technology & Semiconductors",
-    "Electronics Distribution": "Technology & Semiconductors",
-    "PC / Electronics": "Technology & Semiconductors",
-    "Computer Peripherals / Networking": "Technology & Semiconductors",
-    "Electronic Test Equipment": "Technology & Semiconductors",
-    "Optical Equipment": "Technology & Semiconductors",
-    "Functional Films / Materials": "Technology & Semiconductors",
-    "Technology / Internet": "Technology & Semiconductors",
-    # IT / Software
-    "IT Services": "IT Services & Software",
-    "IT Services / Parking": "IT Services & Software",
-    "IT Services / Software": "IT Services & Software",
-    "Internet / Marketplace": "IT Services & Software",
-    "HR / Information Services": "IT Services & Software",
-    "IT Solutions / Cybersecurity": "IT Services & Software",
-    "Streaming / Telecom": "IT Services & Software",
-    "Telecom / IT Services": "IT Services & Software",
-    "Telecom Equipment / Systems": "IT Services & Software",
-    "Video Games": "IT Services & Software",
-    # Financial Services
-    "Digital Banking": "Financial Services",
-    "Community Banking": "Financial Services",
-    "Banking": "Financial Services",
-    "Investment Banking / Financial Services": "Financial Services",
-    "Financial Exchange": "Financial Services",
-    "Online Financial Services": "Financial Services",
-    "Investment Banking / Securities": "Financial Services",
-    "Insurance": "Financial Services",
-    "Online Securities": "Financial Services",
-    "Insurance / Financial Agency": "Financial Services",
-    "Agricultural Finance": "Financial Services",
-    "Business Development Company": "Financial Services & BDCs",
-    "Venture Lending BDC": "Financial Services & BDCs",
-    "Growth Stage BDC": "Financial Services & BDCs",
-    "CLO Fund": "Financial Services & BDCs",
-    "Alternative Asset Management": "Financial Services & BDCs",
-    # Real Estate
-    "Real Estate": "Real Estate & Construction",
-    "Real Estate / Homebuilding": "Real Estate & Construction",
-    "Real Estate / Property Management": "Real Estate & Construction",
-    "Real Estate / Condominiums": "Real Estate & Construction",
-    "Data Center REIT": "Real Estate & Construction",
-    "Homebuilding": "Real Estate & Construction",
-    # Construction
-    "Construction Engineering": "Real Estate & Construction",
-    "Construction": "Real Estate & Construction",
-    "Construction / Civil Engineering": "Real Estate & Construction",
-    "Forestry / Housing": "Real Estate & Construction",
-    # Industrial / Machinery
-    "Construction Equipment": "Industrial & Machinery",
-    "Outdoor Power Equipment": "Industrial & Machinery",
-    "Machine Tools": "Industrial & Machinery",
-    "Packaging Machinery": "Industrial & Machinery",
-    "Industrial Seals / Fluid Control": "Industrial & Machinery",
-    "Building Automation / Control": "Industrial & Machinery",
-    "Fire Safety Equipment": "Industrial & Machinery",
-    "Commercial Refrigeration": "Industrial & Machinery",
-    "Scientific Instruments": "Industrial & Machinery",
-    "Electric Equipment / Motors": "Industrial & Machinery",
-    "Auto Parts": "Industrial & Machinery",
-    "Packaging": "Industrial & Machinery",
-    "Wire Products / Industrial": "Industrial & Machinery",
-    "Rubber / Polymer Products": "Industrial & Machinery",
-    "Healthcare / Industrial Equipment": "Industrial & Machinery",
-    # Materials / Chemicals
-    "Industrial Materials": "Materials & Chemicals",
-    "Specialty Steel": "Materials & Chemicals",
-    "Refractories": "Materials & Chemicals",
-    "Refractories / Ceramics": "Materials & Chemicals",
-    "Specialty Chemicals": "Materials & Chemicals",
-    "Specialty Chemicals / Semiconductor": "Materials & Chemicals",
-    "Industrial Chemicals / Hygiene": "Materials & Chemicals",
-    "Paints / Coatings": "Materials & Chemicals",
-    "Metal Products / Exterior Materials": "Materials & Chemicals",
-    "Steel Manufacturing": "Materials & Chemicals",
-    "Mining / Metals / Machinery": "Materials & Chemicals",
-    # Trading / Distribution (sogo shosha + industrial distributors)
-    "Trading / Conglomerate": "Trading & Distribution",
-    "Steel / Materials Trading": "Trading & Distribution",
-    "Trading / Distribution": "Trading & Distribution",
-    "Industrial Trading": "Trading & Distribution",
-    "Industrial Trading / Distribution": "Trading & Distribution",
-    "Industrial Trading / Electronics": "Trading & Distribution",
-    "Industrial Distribution": "Trading & Distribution",
-    "Electronics Distribution": "Trading & Distribution",
-    # Food & Consumer
-    "Food Manufacturing": "Food & Consumer",
-    "Confectionery / Snacks": "Food & Consumer",
-    "Food / Condiments": "Food & Consumer",
-    "Confectionery": "Food & Consumer",
-    "Flour Milling / Food": "Food & Consumer",
-    "Edible Oil / Food": "Food & Consumer",
-    "Food Packaging / Distribution": "Food & Consumer",
-    "Meat / Food Distribution": "Food & Consumer",
-    "Spirits / Beverages": "Food & Consumer",
-    "Grocery Retail": "Food & Consumer",
-    "Supermarket Retail": "Food & Consumer",
-    # Retail / Consumer (non-food)
-    "Bicycle Retail": "Retail & Consumer Products",
-    "Electronics Retail": "Retail & Consumer Products",
-    "Bicycle / Sports Retail": "Retail & Consumer Products",
-    "Motorcycle Helmets / Safety": "Retail & Consumer Products",
-    "Eyewear": "Retail & Consumer Products",
-    "Musical Instruments": "Retail & Consumer Products",
-    "Auto Parts Retail": "Retail & Consumer Products",
-    "Retail": "Retail & Consumer Products",
-    "Restaurants / Retail": "Retail & Consumer Products",
-    "Luxury Goods": "Luxury",
-    "Luxury Fashion": "Luxury",
-    # Coffee / QSR
-    "Coffee / Quick Service Restaurant": "Retail & Consumer Products",
-    # Used Car
-    "Used Car Retail": "Automotive & Used Cars",
-    "Online Used Car Sales": "Automotive & Used Cars",
-    # Transport / Airports
-    "Airport Operations": "Transport & Airports",
-    "Railway / Entertainment": "Transport & Airports",
-    "Railway": "Transport & Airports",
-    "Shipping": "Transport & Airports",
-    "Tourism / Transportation": "Transport & Airports",
-    "Tourism / Ski Resorts": "Transport & Airports",
-    "Logistics IT / Transportation": "Transport & Airports",
-    # Energy
-    "Midstream Energy": "Energy & Infrastructure",
-    # E-commerce / Cloud
-    "E-commerce / Cloud Computing": "Technology & Semiconductors",
-    # Staffing
-    "Education / Staffing": "Staffing & Services",
-    "Manufacturing Staffing": "Staffing & Services",
-    "Staffing / Outsourcing": "Staffing & Services",
-    "Building Maintenance / Services": "Staffing & Services",
-    "Building Maintenance / Staffing": "Staffing & Services",
-    # Clinical Research
-    "Clinical Research / CRO": "Healthcare & Life Sciences",
-    # Other
-    "Horse Racing / Entertainment": "Other",
-    "Engineering Services": "Other",
-    "Industrial Materials / Geotextiles": "Other",
-    "Technology / Recycling": "Other",
-}
-
-
-# Define a function to map a granular sector to its broad super-sector
-def get_supersector(sector):
-    # Look up the sector in the mapping, defaulting to "Other" if not found
-    return SECTOR_TO_SUPERSECTOR.get(sector, "Other")
-
-
-# Define a function to group holdings by broad super-sector for efficient API batching
-def group_holdings_by_sector(profiles, holdings_lookup):
-    # Initialize a dictionary to group holdings by their super-sector
-    sector_groups = {}
-    # Loop through each ticker and its competitive profile
-    for ticker, profile in profiles.items():
-        # Get the granular sector for this holding, defaulting to "Other" if empty
-        sector = profile.get("sector", "Other").strip() or "Other"
-        # Map the granular sector to a broad super-sector for batching
-        supersector = get_supersector(sector)
-        # Create the super-sector group list if this is the first holding in it
-        if supersector not in sector_groups:
-            # Initialize an empty list for this super-sector
-            sector_groups[supersector] = []
-        # Get the base holding data from the holdings lookup, with defaults
-        base = holdings_lookup.get(ticker, {
-            "ticker": ticker,
-            "name": profile.get("name", ""),
-            "mkt_val": 0,
-            "side": "long",
-            "market": "US",
-        })
-        # Merge profile data into the holding data to create a combined record
-        combined = {**base, **profile, "ticker": ticker}
-        # Override the side from the profile if it was explicitly set there
-        if profile.get("side"):
-            # Use the side specified in the profile
-            combined["side"] = profile["side"]
-        # Add the combined holding record to its super-sector group
-        sector_groups[supersector].append(combined)
-    # Print how many super-sector batches were created
-    print(f"  Grouped holdings into {len(sector_groups)} sector batch(es) for API calls")
-    # Return the dictionary mapping super-sectors to lists of holdings
-    return sector_groups
-
-
-# Define a function to format one private company's data as readable text for the prompt
-def format_company_for_prompt(company):
+# Define a function to format one startup's data as readable text for the API prompt
+def format_startup_for_prompt(company):
     # Start with the company name as the first line
     parts = [f"  - Company: {company['company_name']}"]
     # Add the industry field if available
@@ -741,105 +509,45 @@ def format_company_for_prompt(company):
     return "\n".join(parts)
 
 
-# Define a function to build the full API prompt for a batch of holdings
-def build_api_prompt(holdings_batch, all_companies):
-    # Initialize a list to collect each holding's section of the prompt
-    holdings_sections = []
-    # Initialize a list to collect all keyword-filtered companies (deduplicated)
-    all_relevant = []
-    # Track company names already added to avoid sending duplicates to the API
-    seen_companies = set()
-    # Loop through each holding in this sector batch
-    for holding in holdings_batch:
-        # Get the competitor keywords for this holding
-        keywords = holding.get("competitor_keywords", [])
-        # Filter private companies by relevance to this holding's keywords
-        relevant = filter_companies_by_keywords(all_companies, keywords)
-        # Build a note for short positions to include in the prompt
-        side_note = ""
-        # Check if this is a short position and add a contextual note
-        if holding.get("side") == "short":
-            # Set the note explaining the short position context
-            side_note = " [SHORT POSITION - threats to this company are POSITIVE for the portfolio]"
-        # Build the formatted text block describing this holding
-        section = f"Holding: {holding.get('name', holding['ticker'])} ({holding['ticker']}){side_note}\n"
-        # Add the sector information to the section
-        section += f"  Sector: {holding.get('sector', 'N/A')}\n"
-        # Add the products/services information to the section
-        section += f"  Products/Services: {holding.get('products', 'N/A')}\n"
-        # Add the competitor keywords to the section
-        section += f"  Competitor Keywords: {', '.join(keywords)}\n"
-        # Add the count of candidate companies found for this holding
-        section += f"  Candidate companies to evaluate: {len(relevant)}"
-        # Add this holding's section to the list
-        holdings_sections.append(section)
-        # Add the relevant companies to the master list, skipping duplicates
-        for company in relevant:
-            # Check if this company name has already been added
-            if company["company_name"] not in seen_companies:
-                # Mark this company as seen
-                seen_companies.add(company["company_name"])
-                # Add the company to the deduped master list
-                all_relevant.append(company)
-    # Begin constructing the full prompt with the system instruction
-    prompt = """You are an equity research analyst specializing in competitive threat assessment.
-Your task is to identify which fast-growing private companies represent genuine competitive threats to public company holdings in a portfolio.
+# Define a function to build the Stage 2 threat mapping prompt for a batch of startups
+def build_threat_mapping_prompt(startups_batch):
+    # Start the prompt with the system instruction for the AI
+    prompt = """You are an equity research analyst. For each startup below, identify:
+1. What product/service/market it is targeting
+2. Which specific publicly traded companies (by ticker and name) are most exposed to disruption from this startup
+3. How the startup threatens them (revenue displacement, margin compression, market share loss)
 
-Be selective — only flag companies that are truly competing in the same space, not tangentially related ones.
+Be specific — only list public companies where there is a clear, direct competitive overlap. Do not list tangentially related companies.
 
-HOLDINGS TO ANALYZE:
-
+STARTUPS:
 """
-    # Add all the formatted holding sections to the prompt
-    prompt += "\n\n".join(holdings_sections)
-    # Add the private companies section header
-    prompt += "\n\nPRIVATE COMPANIES TO EVALUATE:\n"
-    # Check if we have any companies to include
-    if all_relevant:
-        # Loop through each relevant company and add its formatted data
-        for company in all_relevant:
-            # Append this company's formatted text block
-            prompt += "\n" + format_company_for_prompt(company) + "\n"
-    # If no companies matched the keyword filters, say so
-    else:
-        # Add a note that no candidates were found
-        prompt += "\nNo candidate companies matched the keyword filters.\n"
-    # Add the detailed instructions for the AI analysis
+    # Loop through each startup in this batch to add its formatted data
+    for startup in startups_batch:
+        # Append this startup's formatted text block
+        prompt += "\n" + format_startup_for_prompt(startup) + "\n"
+    # Add the response format instructions
     prompt += """
-INSTRUCTIONS:
-For each holding, identify which private companies above are genuine competitive threats.
+Return ONLY a JSON array (no markdown fences, no extra text):
+[
+  {
+    "startup_name": "Startup Name",
+    "startup_description": "What they do",
+    "target_market": "The specific market/product category they compete in",
+    "threatened_companies": [
+      {
+        "ticker": "TICK",
+        "company_name": "Public Co Name",
+        "threat_type": "revenue | margins | market_share",
+        "threat_score": 1,
+        "reasoning": "1-2 sentence explanation"
+      }
+    ]
+  }
+]
 
-For each threat, provide:
-- holding_ticker: Ticker of the threatened holding
-- holding_name: Name of the threatened holding
-- holding_side: "long" or "short"
-- threat_company: Name of the threatening private company
-- threat_score: 1-5 (1=minor, 2=emerging, 3=moderate, 4=significant, 5=severe)
-- threat_type: Primary threat vector — "revenue", "margins", or "market_share"
-- reasoning: 1-2 sentence explanation of why this is a genuine threat
-
-IMPORTANT: For SHORT positions, threats to the company are POSITIVE for the portfolio.
-Still identify them as threats to the company, but note the short context.
-
-Return ONLY a JSON object in this exact format (no markdown fences, no extra text):
-{
-  "threats": [
-    {
-      "holding_ticker": "TICKER",
-      "holding_name": "Company Name",
-      "holding_side": "long",
-      "threat_company": "Private Co Name",
-      "threat_score": 3,
-      "threat_type": "revenue",
-      "reasoning": "Explanation here"
-    }
-  ],
-  "holdings_with_no_threats": ["TICKER1", "TICKER2"]
-}
-
-If no threats are identified for any holding, return an empty threats array and list all tickers in holdings_with_no_threats."""
-    # Return the constructed prompt and the count of relevant companies
-    return prompt, len(all_relevant)
+If a startup does not clearly threaten any public company, include it with an empty threatened_companies array."""
+    # Return the constructed prompt
+    return prompt
 
 
 # Define a function to call the Anthropic API with rate limiting support
@@ -884,12 +592,49 @@ def call_anthropic_api(client, prompt, dry_run=False):
         return None
 
 
-# Define a function to parse the structured JSON response from the API
-def parse_api_response(response_text):
+# Define a function to call the Anthropic API with web search tool enabled for qualitative research
+def call_anthropic_api_with_search(client, prompt):
+    # Check if the Anthropic client library was successfully imported
+    if client is None:
+        # Print an error that the API client is not available
+        print("  Error: Anthropic API client not available.")
+        # Return None
+        return None
+    # Try to make the API call with web search tool
+    try:
+        # Send the prompt to Claude Sonnet with web search enabled
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4096,
+            tools=[{"type": "web_search_20250305", "name": "web_search"}],
+            messages=[{"role": "user", "content": prompt}],
+        )
+        # Initialize an empty list to collect text responses from content blocks
+        text_parts = []
+        # Loop through each content block in the response
+        for block in response.content:
+            # Check if this block is a text block (not a tool use block)
+            if hasattr(block, "text"):
+                # Add the text to our collection
+                text_parts.append(block.text)
+        # Join all text parts into a single string
+        text = "\n".join(text_parts)
+        # Return the combined response text
+        return text
+    # Catch any errors from the API call
+    except Exception as e:
+        # Print the error details
+        print(f"  API call with web search failed: {e}")
+        # Return None to indicate the call failed
+        return None
+
+
+# Define a function to parse the threat mapping JSON response from Stage 2
+def parse_threat_mapping_response(response_text):
     # If the response is None (dry run or error), return empty results
     if response_text is None:
-        # Return empty threats list and empty no-threats list
-        return [], []
+        # Return an empty list of threat mappings
+        return []
     # Try to parse the response text as JSON
     try:
         # Strip leading/trailing whitespace from the response
@@ -902,148 +647,576 @@ def parse_api_response(response_text):
             last_fence = cleaned.rfind("```")
             # Extract just the JSON content between the fences
             cleaned = cleaned[first_newline + 1 : last_fence].strip()
-        # Parse the cleaned string as JSON
+        # Parse the cleaned string as a JSON array
         data = json.loads(cleaned)
-        # Extract the list of identified threats
-        threats = data.get("threats", [])
-        # Extract the list of holdings that had no threats
-        no_threats = data.get("holdings_with_no_threats", [])
-        # Return both lists
-        return threats, no_threats
+        # Verify the parsed data is a list
+        if not isinstance(data, list):
+            # If it's a dict with a key containing the array, try to extract it
+            if isinstance(data, dict):
+                # Check common wrapper keys that Claude might use
+                for key in ["results", "startups", "data", "threats"]:
+                    # Check if this key contains a list
+                    if key in data and isinstance(data[key], list):
+                        # Use that list as the data
+                        data = data[key]
+                        # Break since we found it
+                        break
+        # Return the parsed list of threat mappings
+        return data if isinstance(data, list) else []
     # Catch JSON parsing errors
     except (json.JSONDecodeError, ValueError) as e:
         # Print a warning about the parse failure
-        print(f"  Warning: Could not parse API response as JSON: {e}")
+        print(f"  Warning: Could not parse threat mapping response as JSON: {e}")
         # Print a preview of the response for debugging purposes
         print(f"  Response preview: {response_text[:500]}")
         # Return empty results
-        return [], []
+        return []
 
 
-# Define a function to generate the markdown weekly digest report
-def generate_markdown_digest(all_threats, holdings, profiles, portfolio_name, output_dir):
+# Define a function to convert a Bloomberg-style ticker to a yfinance-compatible ticker
+def map_ticker_to_yfinance(ticker):
+    # Strip whitespace from the ticker
+    ticker = ticker.strip()
+    # Check if the ticker has a Japanese suffix and convert to Tokyo Stock Exchange format
+    if ticker.endswith(" JP"):
+        # Strip the " JP" suffix and append ".T" for Yahoo Finance's Tokyo exchange code
+        return ticker[:-3].strip() + ".T"
+    # Check if the ticker has a French suffix and convert to Paris exchange format
+    elif ticker.endswith(" FP"):
+        # Strip the " FP" suffix and append ".PA" for Yahoo Finance's Paris exchange code
+        return ticker[:-3].strip() + ".PA"
+    # Check if the ticker has a Mexican suffix and convert to Mexico exchange format
+    elif ticker.endswith(" MM"):
+        # Strip the " MM" suffix and append ".MX" for Yahoo Finance's Mexico exchange code
+        return ticker[:-3].strip() + ".MX"
+    # If no recognized suffix, return the ticker as-is (assumed US-listed)
+    return ticker
+
+
+# Define a function to strip market suffixes from a ticker for matching purposes
+def strip_ticker_suffix(ticker):
+    # Strip whitespace from the ticker
+    ticker = ticker.strip()
+    # Define the list of known Bloomberg market suffixes
+    suffixes = [" JP", " FP", " MM", " LN", " GR", " AU", " HK", " SP", " IT", " SM"]
+    # Loop through each suffix to check for a match
+    for suffix in suffixes:
+        # Check if the ticker ends with this suffix
+        if ticker.endswith(suffix):
+            # Return the ticker without the suffix
+            return ticker[:-len(suffix)].strip()
+    # No suffix found, return the ticker as-is
+    return ticker
+
+
+# Define a function to fetch financial evidence from yfinance for a single ticker (Stage 3a)
+def fetch_yfinance_evidence(ticker_raw):
+    # Convert the raw ticker to a yfinance-compatible format
+    yf_ticker = map_ticker_to_yfinance(ticker_raw)
+    # Initialize the evidence dictionary with default values
+    evidence = {
+        "ticker": ticker_raw,
+        "yf_ticker": yf_ticker,
+        "earnings_misses_last_4q": 0,
+        "revenue_trend": "unknown",
+        "revenue_qoq_changes": [],
+        "analyst_consensus": "unknown",
+        "recent_downgrades": 0,
+        "price_return_3m": None,
+        "price_return_6m": None,
+        "evidence_strength": 0,
+        "evidence_summary": "No financial data available",
+    }
+    # Check if yfinance is installed
+    if yf is None:
+        # Print a warning that yfinance is not available
+        print(f"    Warning: yfinance not installed, skipping evidence for {ticker_raw}")
+        # Return the default evidence dictionary
+        return evidence
+    # Try to fetch data from yfinance, wrapping everything in a try/except
+    try:
+        # Create a yfinance Ticker object for this stock
+        ticker_obj = yf.Ticker(yf_ticker)
+
+        # --- Earnings history: check for EPS misses ---
+        # Try to access earnings history data
+        try:
+            # Get the earnings history DataFrame (actual vs estimate EPS)
+            earnings_hist = ticker_obj.earnings_history
+            # Check if we got valid earnings data back
+            if earnings_hist is not None and not earnings_hist.empty:
+                # Take the last 4 quarters of earnings data
+                recent = earnings_hist.tail(4)
+                # Initialize a counter for earnings misses
+                misses = 0
+                # Loop through each row to check for misses
+                for _, row in recent.iterrows():
+                    # Try to extract actual and estimate EPS values
+                    try:
+                        # Get the actual EPS value from this row
+                        actual = row.get("epsActual", row.get("Reported EPS", None))
+                        # Get the estimated EPS value from this row
+                        estimate = row.get("epsEstimate", row.get("EPS Estimate", None))
+                        # Check if both values exist and actual is below estimate
+                        if actual is not None and estimate is not None and float(actual) < float(estimate):
+                            # Increment the miss counter
+                            misses += 1
+                    # Catch any conversion or access errors
+                    except (ValueError, TypeError):
+                        # Skip this row if we can't parse the values
+                        pass
+                # Store the number of earnings misses
+                evidence["earnings_misses_last_4q"] = misses
+        # Catch any errors accessing earnings history
+        except Exception:
+            # Leave the default value of 0 misses
+            pass
+
+        # --- Revenue trend: quarterly financials ---
+        # Try to access quarterly financial statements
+        try:
+            # Get the quarterly income statement data
+            q_financials = ticker_obj.quarterly_financials
+            # Check if we got valid financial data back
+            if q_financials is not None and not q_financials.empty:
+                # Look for a revenue row (could be labeled differently)
+                revenue_row = None
+                # Check common labels for the revenue line item
+                for label in ["Total Revenue", "Revenue", "Operating Revenue"]:
+                    # Check if this label exists in the financial data index
+                    if label in q_financials.index:
+                        # Use this row as the revenue data
+                        revenue_row = q_financials.loc[label]
+                        # Break since we found a match
+                        break
+                # Check if we found a revenue row with data
+                if revenue_row is not None and len(revenue_row) >= 2:
+                    # Sort by column date to ensure chronological order (oldest first)
+                    revenue_sorted = revenue_row.sort_index()
+                    # Take the last 4 quarters (or fewer if not enough data)
+                    recent_rev = revenue_sorted.tail(4)
+                    # Get the revenue values as a list
+                    rev_values = recent_rev.values.tolist()
+                    # Calculate quarter-over-quarter percentage changes
+                    qoq_changes = []
+                    # Loop through pairs of consecutive quarters to compute changes
+                    for i in range(1, len(rev_values)):
+                        # Check that the previous quarter's revenue is valid and non-zero
+                        if rev_values[i - 1] is not None and rev_values[i - 1] != 0 and rev_values[i] is not None:
+                            # Calculate the QoQ percentage change
+                            change = (rev_values[i] - rev_values[i - 1]) / abs(rev_values[i - 1])
+                            # Add this change to our list
+                            qoq_changes.append(round(change, 4))
+                    # Store the QoQ changes
+                    evidence["revenue_qoq_changes"] = qoq_changes
+                    # Determine the overall revenue trend from the changes
+                    if qoq_changes:
+                        # Count how many quarters had negative revenue growth
+                        declining_quarters = sum(1 for c in qoq_changes if c < 0)
+                        # If more than half the quarters declined, label as declining
+                        if declining_quarters > len(qoq_changes) / 2:
+                            # Set the trend to declining
+                            evidence["revenue_trend"] = "declining"
+                        # If more than half grew, label as growing
+                        elif declining_quarters < len(qoq_changes) / 2:
+                            # Set the trend to growing
+                            evidence["revenue_trend"] = "growing"
+                        # If exactly split, label as stable
+                        else:
+                            # Set the trend to stable
+                            evidence["revenue_trend"] = "stable"
+        # Catch any errors accessing quarterly financials
+        except Exception:
+            # Leave the default value
+            pass
+
+        # --- Analyst recommendations ---
+        # Try to access analyst recommendation data
+        try:
+            # Get the recommendations DataFrame
+            recs = ticker_obj.recommendations
+            # Check if we got valid recommendations data
+            if recs is not None and not recs.empty:
+                # Initialize a counter for recent downgrades
+                downgrade_count = 0
+                # Initialize the consensus variable
+                consensus = "unknown"
+                # Try to use recommendations_summary for consensus
+                try:
+                    # Get the recommendations summary
+                    rec_summary = ticker_obj.recommendations_summary
+                    # Check if summary data exists
+                    if rec_summary is not None and not rec_summary.empty:
+                        # Get the most recent period's data (first row)
+                        latest = rec_summary.iloc[0]
+                        # Count buy-side recommendations
+                        buy_count = int(latest.get("strongBuy", 0)) + int(latest.get("buy", 0))
+                        # Count hold recommendations
+                        hold_count = int(latest.get("hold", 0))
+                        # Count sell-side recommendations
+                        sell_count = int(latest.get("sell", 0)) + int(latest.get("strongSell", 0))
+                        # Determine consensus based on which category has the most
+                        if sell_count > buy_count and sell_count > hold_count:
+                            # Set consensus to sell
+                            consensus = "sell"
+                        # Check if buy recommendations dominate
+                        elif buy_count > sell_count and buy_count > hold_count:
+                            # Set consensus to buy
+                            consensus = "buy"
+                        # Otherwise default to hold
+                        else:
+                            # Set consensus to hold
+                            consensus = "hold"
+                # Catch errors accessing recommendations summary
+                except Exception:
+                    # Leave consensus as unknown
+                    pass
+                # Store the analyst consensus
+                evidence["analyst_consensus"] = consensus
+                # Try to count downgrades from the full recommendations history
+                try:
+                    # Check for common downgrade column patterns
+                    if "To Grade" in recs.columns and "Action" in recs.columns:
+                        # Loop through recommendation rows to count downgrades
+                        for _, row in recs.iterrows():
+                            # Check if this recommendation was a downgrade
+                            action = str(row.get("Action", "")).lower()
+                            # If the action contains "down", count it as a downgrade
+                            if "down" in action:
+                                # Increment the downgrade counter
+                                downgrade_count += 1
+                # Catch errors counting downgrades
+                except Exception:
+                    # Leave default value
+                    pass
+                # Store the downgrade count
+                evidence["recent_downgrades"] = downgrade_count
+        # Catch any errors accessing recommendations
+        except Exception:
+            # Leave default values
+            pass
+
+        # --- Price performance ---
+        # Try to fetch 6-month price history
+        try:
+            # Get 6 months of daily closing prices
+            hist = ticker_obj.history(period="6mo")
+            # Check if we got valid price history
+            if hist is not None and not hist.empty and len(hist) > 1:
+                # Get the most recent closing price
+                latest_price = hist["Close"].iloc[-1]
+                # Get the closing price from 6 months ago (first data point)
+                price_6m_ago = hist["Close"].iloc[0]
+                # Calculate 6-month return
+                if price_6m_ago > 0:
+                    # Compute the percentage return over 6 months
+                    evidence["price_return_6m"] = round((latest_price - price_6m_ago) / price_6m_ago, 4)
+                # Calculate 3-month return (approximately 63 trading days)
+                if len(hist) > 63:
+                    # Get the closing price from approximately 3 months ago
+                    price_3m_ago = hist["Close"].iloc[-63]
+                    # Check for valid price
+                    if price_3m_ago > 0:
+                        # Compute the percentage return over 3 months
+                        evidence["price_return_3m"] = round((latest_price - price_3m_ago) / price_3m_ago, 4)
+                # If less than 63 days of data, use the midpoint as a rough proxy
+                elif len(hist) > 2:
+                    # Use the midpoint of available data as a rough 3-month proxy
+                    mid_idx = len(hist) // 2
+                    # Get the price at the midpoint
+                    price_mid = hist["Close"].iloc[mid_idx]
+                    # Check for valid price
+                    if price_mid > 0:
+                        # Compute the return from midpoint to now
+                        evidence["price_return_3m"] = round((latest_price - price_mid) / price_mid, 4)
+        # Catch any errors accessing price history
+        except Exception:
+            # Leave default None values for price returns
+            pass
+
+    # Catch any top-level errors from yfinance (e.g., ticker not found)
+    except Exception as e:
+        # Print a warning about the yfinance failure
+        print(f"    Warning: yfinance lookup failed for {yf_ticker}: {e}")
+        # Return the evidence with defaults
+        return evidence
+
+    # Compute the evidence strength score from the structured data
+    evidence["evidence_strength"] = compute_evidence_strength(evidence)
+    # Auto-generate the evidence summary as a plain English string
+    evidence["evidence_summary"] = build_evidence_summary(evidence)
+    # Return the complete evidence dictionary
+    return evidence
+
+
+# Define a function to compute an evidence strength score (1-5) from structured yfinance data
+def compute_evidence_strength(evidence):
+    # Initialize the score at zero
+    score = 0
+    # Add 1 point if the company missed earnings at least once in the last 4 quarters
+    if evidence.get("earnings_misses_last_4q", 0) >= 1:
+        # Increment score for earnings misses
+        score += 1
+    # Add 1 point if revenue is trending downward
+    if evidence.get("revenue_trend") == "declining":
+        # Increment score for declining revenue
+        score += 1
+    # Add 1 point if there have been 2 or more analyst downgrades
+    if evidence.get("recent_downgrades", 0) >= 2:
+        # Increment score for analyst downgrades
+        score += 1
+    # Add 1 point if the stock has dropped more than 15% in 6 months
+    if evidence.get("price_return_6m") is not None and evidence["price_return_6m"] < -0.15:
+        # Increment score for poor price performance
+        score += 1
+    # Add 1 point if analyst consensus is sell or underweight
+    if evidence.get("analyst_consensus") in ("sell", "underweight"):
+        # Increment score for bearish consensus
+        score += 1
+    # Cap the score at a maximum of 5
+    return min(score, 5)
+
+
+# Define a function to auto-generate a plain English evidence summary from structured data
+def build_evidence_summary(evidence):
+    # Initialize a list to collect summary sentences
+    parts = []
+    # Add a sentence about earnings misses if any occurred
+    if evidence.get("earnings_misses_last_4q", 0) > 0:
+        # Build the earnings miss sentence
+        parts.append(f"Missed earnings {evidence['earnings_misses_last_4q']} of last 4 quarters.")
+    # Add a sentence about revenue trend if it's declining
+    if evidence.get("revenue_trend") == "declining":
+        # Build the revenue trend sentence
+        parts.append("Revenue declining QoQ.")
+    # Add a sentence about revenue trend if it's growing (positive signal)
+    elif evidence.get("revenue_trend") == "growing":
+        # Build the positive revenue sentence
+        parts.append("Revenue growing QoQ.")
+    # Add a sentence about analyst downgrades if any occurred
+    if evidence.get("recent_downgrades", 0) > 0:
+        # Build the downgrade sentence
+        parts.append(f"{evidence['recent_downgrades']} analyst downgrade(s) in recent months.")
+    # Add a sentence about analyst consensus
+    if evidence.get("analyst_consensus") not in ("unknown", None):
+        # Build the consensus sentence
+        parts.append(f"Analyst consensus: {evidence['analyst_consensus']}.")
+    # Add a sentence about 6-month price performance if available
+    if evidence.get("price_return_6m") is not None:
+        # Format the return as a percentage
+        pct = round(evidence["price_return_6m"] * 100, 1)
+        # Build the price performance sentence
+        parts.append(f"Stock {'up' if pct >= 0 else 'down'} {abs(pct)}% in 6 months.")
+    # If we have no data points at all, return the default message
+    if not parts:
+        # Return the no-data message
+        return "No financial data available"
+    # Join all the sentences into a single summary string
+    return " ".join(parts)
+
+
+# Define a function to fetch qualitative evidence using Claude + web search (Stage 3b)
+def fetch_qualitative_evidence(client, ticker, company_name, startup_name, target_market, evidence_summary):
+    # Build the prompt for qualitative research with web search
+    prompt = f"""Research competitive pressure on {company_name} ({ticker}) from {startup_name} in the {target_market} space.
+
+The company's financials already show: {evidence_summary}
+
+Look for:
+- Management commentary about competitive threats in recent earnings calls
+- News about losing customers or contracts to the startup or similar competitors
+- Industry reports about market share shifts in this space
+
+Return ONLY a JSON object (no markdown fences):
+{{
+  "ticker": "{ticker}",
+  "qualitative_findings": "2-3 sentence summary of what you found",
+  "competitive_pressure_confirmed": true
+}}"""
+    # Call the API with web search enabled
+    response_text = call_anthropic_api_with_search(client, prompt)
+    # If the API call failed, return a default result
+    if response_text is None:
+        # Return an empty qualitative result
+        return {"ticker": ticker, "qualitative_findings": "API call failed", "competitive_pressure_confirmed": False}
+    # Try to parse the response as JSON
+    try:
+        # Strip whitespace from the response
+        cleaned = response_text.strip()
+        # Check if Claude wrapped the JSON in markdown code fences
+        if cleaned.startswith("```"):
+            # Find the position of the first newline after the opening fence
+            first_newline = cleaned.index("\n")
+            # Find the position of the last closing code fence
+            last_fence = cleaned.rfind("```")
+            # Extract just the JSON content between the fences
+            cleaned = cleaned[first_newline + 1 : last_fence].strip()
+        # Parse the cleaned string as JSON
+        result = json.loads(cleaned)
+        # Return the parsed result
+        return result
+    # Catch JSON parsing errors
+    except (json.JSONDecodeError, ValueError) as e:
+        # Print a warning about the parse failure
+        print(f"    Warning: Could not parse qualitative response for {ticker}: {e}")
+        # Return a default result with the raw response text truncated
+        return {"ticker": ticker, "qualitative_findings": response_text[:300], "competitive_pressure_confirmed": False}
+
+
+# Define a function to cross-reference threat pairs against portfolio holdings (Stage 4)
+def cross_reference_holdings(threat_pairs, evidence_by_ticker, holdings):
+    # Create a lookup from stripped ticker to holding data for matching
+    holdings_lookup = {}
+    # Loop through each holding to build the lookup
+    for h in holdings:
+        # Get the raw ticker
+        raw_ticker = h["ticker"]
+        # Strip the market suffix for matching
+        stripped = strip_ticker_suffix(raw_ticker)
+        # Store the holding data under the stripped ticker
+        holdings_lookup[stripped] = h
+        # Also store under the raw ticker for exact matches
+        holdings_lookup[raw_ticker] = h
+    # Initialize the list for threat pairs that match holdings
+    holdings_view = []
+    # Initialize the list for all threat pairs (broad market view)
+    broad_view = []
+    # Loop through each threat pair to classify it
+    for pair in threat_pairs:
+        # Get the ticker of the threatened public company
+        ticker = pair.get("ticker", "")
+        # Strip the suffix for matching
+        stripped_ticker = strip_ticker_suffix(ticker)
+        # Get the financial evidence for this ticker if it exists
+        evidence = evidence_by_ticker.get(ticker, {})
+        # Build the combined record with threat data and evidence
+        record = {
+            "startup_name": pair.get("startup_name", ""),
+            "startup_description": pair.get("startup_description", ""),
+            "target_market": pair.get("target_market", ""),
+            "ticker": ticker,
+            "company_name": pair.get("company_name", ""),
+            "threat_type": pair.get("threat_type", ""),
+            "threat_score": pair.get("threat_score", 0),
+            "reasoning": pair.get("reasoning", ""),
+            "evidence_strength": evidence.get("evidence_strength", 0),
+            "evidence_summary": evidence.get("evidence_summary", "No data"),
+            "qualitative_findings": evidence.get("qualitative_findings", ""),
+        }
+        # Add this record to the broad market view (always)
+        broad_view.append(record)
+        # Check if this ticker matches any of our holdings
+        if ticker in holdings_lookup or stripped_ticker in holdings_lookup:
+            # Get the matching holding record
+            holding = holdings_lookup.get(ticker, holdings_lookup.get(stripped_ticker, {}))
+            # Create a copy of the record for the holdings view so we don't mutate the broad view
+            holdings_record = dict(record)
+            # Add the holding side (long/short) to the holdings record
+            holdings_record["holding_side"] = holding.get("side", "long")
+            # Add the holding's portfolio name
+            holdings_record["holding_name"] = holding.get("name", "")
+            # Add this record to the holdings-filtered view
+            holdings_view.append(holdings_record)
+    # Print the cross-reference results
+    print(f"  Holdings matches: {len(holdings_view)} threat pairs match current positions")
+    # Print the broad market count
+    print(f"  Broad market: {len(broad_view)} total threat pairs")
+    # Return both views
+    return holdings_view, broad_view
+
+
+# Define a function to generate a markdown threat digest report
+def generate_markdown_digest(threat_records, portfolio_name, output_dir, report_type="market"):
     # Get today's date formatted as YYYY-MM-DD
     today = datetime.now().strftime("%Y-%m-%d")
-    # Construct the full output file path
-    output_path = os.path.join(output_dir, f"threat_digest_{today}.md")
+    # Construct the output file name based on report type (holdings or market)
+    filename = f"threat_digest_{report_type}_{today}.md"
+    # Build the full output file path
+    output_path = os.path.join(output_dir, filename)
     # Create the output directory if it doesn't already exist
     os.makedirs(output_dir, exist_ok=True)
-    # Count the total number of holdings that were scanned (those with profiles)
-    total_scanned = len(profiles)
-    # Count the total number of threats that were identified
-    total_threats = len(all_threats)
-    # Group threats by holding ticker for the per-holding report sections
-    threats_by_ticker = {}
-    # Loop through each threat to organize them by holding
-    for threat in all_threats:
-        # Get the ticker associated with this threat
-        ticker = threat.get("holding_ticker", "UNKNOWN")
-        # Create the list for this ticker if it doesn't exist yet
-        if ticker not in threats_by_ticker:
-            # Initialize an empty list for this ticker's threats
-            threats_by_ticker[ticker] = []
-        # Add this threat to the appropriate ticker group
-        threats_by_ticker[ticker].append(threat)
-    # Find the top 5 holdings with the most threats for the summary section
-    top_threatened = sorted(
-        threats_by_ticker.items(), key=lambda x: len(x[1]), reverse=True
-    )[:5]
+    # Sort threat records by threat score descending so the most severe appear first
+    sorted_records = sorted(threat_records, key=lambda x: x.get("threat_score", 0), reverse=True)
+    # Count the total number of threat pairs
+    total_threats = len(sorted_records)
+    # Count unique startups in this report
+    unique_startups = len(set(r.get("startup_name", "") for r in sorted_records))
+    # Count unique threatened public companies
+    unique_targets = len(set(r.get("ticker", "") for r in sorted_records))
     # Initialize a list to build the markdown content line by line
     lines = []
-    # Add the report title with the portfolio name
-    lines.append(f"# Competitive Threat Digest — {portfolio_name}")
+    # Build the report label based on whether this is the holdings or market view
+    report_label = "Holdings" if report_type == "holdings" else "Broad Market"
+    # Add the report title with the portfolio name and report type
+    lines.append(f"# Disruption Monitor — {portfolio_name} ({report_label})")
     # Add the report date
     lines.append(f"\n**Date:** {today}\n")
     # Add the summary section header
     lines.append("## Summary\n")
-    # Add the count of holdings scanned
-    lines.append(f"- **Holdings scanned:** {total_scanned}")
-    # Add the count of threats identified
-    lines.append(f"- **Total threats identified:** {total_threats}")
-    # Add the top threatened holdings if there are any
-    if top_threatened:
-        # Add the sub-header for top threatened holdings
-        lines.append("- **Top threatened holdings:**")
-        # Loop through the top threatened holdings to list them
-        for ticker, ticker_threats in top_threatened:
-            # Get the holding name from the first threat record
-            name = ticker_threats[0].get("holding_name", ticker)
-            # Get the position side from the first threat record
-            side = ticker_threats[0].get("holding_side", "long")
-            # Add a visual label if this is a short position
-            side_label = " *(SHORT)*" if side == "short" else ""
-            # Add this holding to the top-threatened list
-            lines.append(
-                f"  - {name} ({ticker}){side_label}: {len(ticker_threats)} threat(s)"
-            )
-    # Add a blank line before the detailed findings section
+    # Add the count of threat pairs identified
+    lines.append(f"- **Threat pairs identified:** {total_threats}")
+    # Add the count of unique startups
+    lines.append(f"- **Unique startups:** {unique_startups}")
+    # Add the count of unique threatened companies
+    lines.append(f"- **Public companies threatened:** {unique_targets}")
+    # If this is a holdings report, add short position info
+    if report_type == "holdings":
+        # Count threats to short positions (portfolio-positive)
+        short_threats = sum(1 for r in sorted_records if r.get("holding_side") == "short")
+        # Add the short position count
+        lines.append(f"- **Short position threats (portfolio-positive):** {short_threats}")
+    # Add a blank line before the detailed findings
     lines.append("")
     # Add the detailed findings section header
-    lines.append("## Detailed Findings\n")
-    # Create a lookup dictionary from ticker to holding data
-    holdings_lookup = {h["ticker"]: h for h in holdings}
-    # Loop through each profiled holding in sorted order to show its threats
-    for ticker, profile in sorted(profiles.items()):
-        # Get the holding's display name
-        name = profile.get("name", ticker)
-        # Determine the position side, checking both profile and holdings data
-        side = profile.get(
-            "side", holdings_lookup.get(ticker, {}).get("side", "long")
-        )
-        # Add a visual tag for short positions
-        side_label = " [SHORT]" if side == "short" else ""
-        # Add the holding header as a level-3 heading
-        lines.append(f"### {name} ({ticker}){side_label}\n")
-        # Check if this holding has any identified threats
-        if ticker in threats_by_ticker:
-            # Get the list of threats for this holding
-            ticker_threats = threats_by_ticker[ticker]
-            # Sort threats by score descending so the most severe appear first
-            ticker_threats.sort(
-                key=lambda x: x.get("threat_score", 0), reverse=True
-            )
-            # Loop through each threat to add it to the report
-            for threat in ticker_threats:
-                # Get the numeric threat score
-                score = threat.get("threat_score", 0)
-                # Map numeric scores to human-readable severity labels
-                severity_labels = {
-                    1: "Minor",
-                    2: "Emerging",
-                    3: "Moderate",
-                    4: "Significant",
-                    5: "Severe",
-                }
-                # Look up the severity label for this score
-                severity = severity_labels.get(score, "Unknown")
-                # Get the threat type (revenue, margins, or market_share)
-                threat_type = threat.get("threat_type", "N/A")
-                # Add the threat company name with its score
-                lines.append(
-                    f"**{threat.get('threat_company', 'Unknown')}** — Threat Score: {score}/5 ({severity})"
-                )
-                # Add the type of threat
-                lines.append(f"- *Threat to:* {threat_type}")
-                # Add the reasoning for why this is a threat
-                lines.append(
-                    f"- *Why:* {threat.get('reasoning', 'No reasoning provided')}"
-                )
-                # If this is a short position, add a note about portfolio impact
-                if side == "short":
-                    # Add the portfolio-positive note
-                    lines.append(
-                        "- *Portfolio impact:* **POSITIVE** — threat to a short position"
-                    )
-                # Add a blank line between threats for readability
-                lines.append("")
-        # If no threats were found for this holding
-        else:
-            # Add a single line noting no threats
-            lines.append("No new threats identified.\n")
+    lines.append("## Threat Pairs (by severity)\n")
+    # Loop through each threat record to add it to the report
+    for record in sorted_records:
+        # Get the numeric threat score
+        score = record.get("threat_score", 0)
+        # Map numeric scores to human-readable severity labels
+        severity_labels = {1: "Minor", 2: "Emerging", 3: "Moderate", 4: "Significant", 5: "Severe"}
+        # Look up the severity label for this score
+        severity = severity_labels.get(score, "Unknown")
+        # Get the startup name
+        startup = record.get("startup_name", "Unknown Startup")
+        # Get the target company's ticker
+        ticker = record.get("ticker", "???")
+        # Get the target company's name
+        company_name = record.get("company_name", "Unknown")
+        # Add the threat pair header as a level-3 heading
+        lines.append(f"### {startup} → {company_name} ({ticker})")
+        # Add the threat score and severity
+        lines.append(f"- **Threat Score:** {score}/5 ({severity})")
+        # Add the threat type
+        lines.append(f"- **Threat Type:** {record.get('threat_type', 'N/A')}")
+        # Add the target market
+        lines.append(f"- **Target Market:** {record.get('target_market', 'N/A')}")
+        # Add the reasoning
+        lines.append(f"- **Reasoning:** {record.get('reasoning', 'No reasoning provided')}")
+        # Get the financial evidence summary
+        evidence_summary = record.get("evidence_summary", "")
+        # Check if there's evidence data to display
+        if evidence_summary and evidence_summary != "No data":
+            # Get the evidence strength score
+            ev_strength = record.get("evidence_strength", 0)
+            # Add the evidence line
+            lines.append(f"- **Financial Evidence ({ev_strength}/5):** {evidence_summary}")
+        # Get qualitative findings if available
+        qual = record.get("qualitative_findings", "")
+        # Check if there are qualitative findings to display
+        if qual:
+            # Add the qualitative findings line
+            lines.append(f"- **Qualitative:** {qual}")
+        # If this is a holdings report and the position is short, add a portfolio impact note
+        if report_type == "holdings" and record.get("holding_side") == "short":
+            # Add the portfolio-positive note for short positions
+            lines.append("- **Portfolio Impact:** POSITIVE — threat to a short position")
+        # Add a blank line between entries for readability
+        lines.append("")
     # Add a horizontal rule before the footer
     lines.append("---")
     # Add the generation timestamp footer
-    lines.append(f"\n*Generated by Competitive Threat Tracker on {today}*")
+    lines.append(f"\n*Generated by Disruption Monitor on {today}*")
     # Join all the lines into a single markdown string
     content = "\n".join(lines)
     # Open the output file for writing
@@ -1051,13 +1224,13 @@ def generate_markdown_digest(all_threats, holdings, profiles, portfolio_name, ou
         # Write the complete markdown content to the file
         f.write(content)
     # Print where the digest was saved
-    print(f"  Markdown digest written to: {output_path}")
+    print(f"  {report_label} digest written to: {output_path}")
     # Return the output file path
     return output_path
 
 
-# Define a function to generate the structured threats CSV file
-def generate_threats_csv(all_threats, companies_lookup, output_dir):
+# Define a function to generate the combined CSV of all threat pairs and evidence
+def generate_threats_csv(threat_records, companies_lookup, output_dir):
     # Get today's date formatted as YYYY-MM-DD
     today = datetime.now().strftime("%Y-%m-%d")
     # Construct the full output file path
@@ -1066,17 +1239,21 @@ def generate_threats_csv(all_threats, companies_lookup, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     # Define the column headers for the CSV file
     fieldnames = [
-        "holding_ticker",
-        "holding_name",
-        "holding_side",
-        "threat_company",
+        "startup_name",
+        "target_market",
+        "threatened_ticker",
+        "threatened_company",
         "threat_score",
         "threat_type",
         "reasoning",
-        "threat_revenue",
-        "threat_growth",
-        "threat_funding",
-        "data_source",
+        "evidence_strength",
+        "evidence_summary",
+        "qualitative_findings",
+        "holding_side",
+        "in_portfolio",
+        "startup_revenue",
+        "startup_growth",
+        "startup_funding",
         "date_identified",
     ]
     # Open the CSV file for writing
@@ -1085,90 +1262,73 @@ def generate_threats_csv(all_threats, companies_lookup, output_dir):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         # Write the header row to the CSV
         writer.writeheader()
-        # Loop through each threat to write one row per threat
-        for threat in all_threats:
-            # Get the threat company name for looking up additional metrics
-            company_name = threat.get("threat_company", "")
-            # Look up this company's data from the private companies for enrichment
-            company_data = companies_lookup.get(company_name, {})
-            # Build the complete row with threat data and enrichment data
+        # Loop through each threat record to write one row per threat pair
+        for record in threat_records:
+            # Get the startup name for looking up additional data from the CSV source
+            startup_name = record.get("startup_name", "")
+            # Look up this startup's data from the private companies for enrichment
+            startup_data = companies_lookup.get(startup_name, {})
+            # Determine if this threat pair is in the portfolio
+            in_portfolio = "yes" if record.get("holding_side") else "no"
+            # Build the complete row with threat data, evidence, and enrichment data
             row = {
-                "holding_ticker": threat.get("holding_ticker", ""),
-                "holding_name": threat.get("holding_name", ""),
-                "holding_side": threat.get("holding_side", ""),
-                "threat_company": company_name,
-                "threat_score": threat.get("threat_score", ""),
-                "threat_type": threat.get("threat_type", ""),
-                "reasoning": threat.get("reasoning", ""),
-                "threat_revenue": company_data.get("revenue", ""),
-                "threat_growth": company_data.get("growth", ""),
-                "threat_funding": company_data.get("funding", ""),
-                "data_source": company_data.get("source_file", ""),
+                "startup_name": startup_name,
+                "target_market": record.get("target_market", ""),
+                "threatened_ticker": record.get("ticker", ""),
+                "threatened_company": record.get("company_name", ""),
+                "threat_score": record.get("threat_score", ""),
+                "threat_type": record.get("threat_type", ""),
+                "reasoning": record.get("reasoning", ""),
+                "evidence_strength": record.get("evidence_strength", ""),
+                "evidence_summary": record.get("evidence_summary", ""),
+                "qualitative_findings": record.get("qualitative_findings", ""),
+                "holding_side": record.get("holding_side", ""),
+                "in_portfolio": in_portfolio,
+                "startup_revenue": startup_data.get("revenue", ""),
+                "startup_growth": startup_data.get("growth", ""),
+                "startup_funding": startup_data.get("funding", ""),
                 "date_identified": today,
             }
             # Write this row to the CSV file
             writer.writerow(row)
     # Print where the CSV was saved and how many rows were written
-    print(f"  Threats CSV written to: {output_path} ({len(all_threats)} threats)")
+    print(f"  Threats CSV written to: {output_path} ({len(threat_records)} threat pairs)")
     # Return the output file path
     return output_path
 
 
-# Define the main function that orchestrates the entire workflow
+# Define the main function that orchestrates the entire pipeline
 def main():
     # Parse command-line arguments provided by the user
     args = parse_args()
     # Print a startup banner
-    print("\n=== Competitive Threat Tracker MVP ===\n")
+    print("\n=== Disruption Monitor ===\n")
 
-    # Step 1: Read the portfolio holdings from the Excel file
-    print("[1/6] Reading portfolio holdings...")
-    # Call the holdings reader with the user-specified file path
-    holdings = read_holdings(args.holdings)
-    # Create a lookup dictionary from ticker to holding data for quick access
-    holdings_lookup = {h["ticker"]: h for h in holdings}
-
-    # Step 2: Generate or update the competitive profile template
-    print(f"\n[2/6] Managing competitive profile template...")
-    # Generate the template, preserving any existing user-entered data
-    generate_profile_template(holdings, args.profiles)
-    # Check if the user only wanted to generate the template
-    if args.holdings_only:
-        # Print a message that we're done and exiting early
-        print("\n--holdings-only flag set. Template generated. Exiting.")
-        # Return to end the script
-        return
-
-    # Step 3: Read the competitive profiles that have been filled in
-    print(f"\n[3/6] Reading competitive profiles...")
-    # Load only the profiles where the user has entered sector/keyword data
-    profiles = read_competitive_profiles(args.profiles)
-    # Check if there are any usable profiles
-    if not profiles:
-        # Print guidance about filling in the profiles
-        print("\nNo filled-in competitive profiles found.")
-        # Tell the user which file to edit
-        print(f"Please fill in sector, products, and competitor_keywords in: {args.profiles}")
-        # Suggest using the holdings-only flag first
-        print("Tip: Run with --holdings-only first to generate the template.")
-        # Exit since there's nothing to analyze
-        return
-
-    # Step 4: Read private company data from CSV files
-    print(f"\n[4/6] Reading private company data...")
-    # Load companies from the CSV directory, or use an empty list if no directory given
+    # ─── Stage 1: Load Startup Universe ───
+    # Print the stage header
+    print("[Stage 1] Loading startup universe...")
+    # Read private companies from CSV files, or use empty list if no directory given
     companies = read_private_companies(args.csv_dir) if args.csv_dir else []
+    # Check if we have any companies to analyze
+    if not companies:
+        # Print an error about missing startup data
+        print("  Error: No startup data loaded. Provide CSVs via --csv-dir.")
+        # Exit the script
+        return
+    # Filter startups by scope (software-only vs all)
+    companies = filter_startups_by_scope(companies, args.scope)
+    # Check if any companies passed the scope filter
+    if not companies:
+        # Print an error about no companies matching the scope
+        print("  Error: No startups match the selected scope filter.")
+        # Exit the script
+        return
     # Build a lookup dictionary from company name to company data for enriching output
     companies_lookup = {c["company_name"]: c for c in companies}
-    # Check if we have both profiles and companies to analyze
-    if not companies:
-        # Print a warning that no private company data is loaded
-        print("  Warning: No private company data loaded. API analysis will have no candidates.")
-        # Print a hint about providing CSV data
-        print("  Provide CSVs via --csv-dir to enable threat matching.")
 
-    # Step 5: Run the API analysis
-    print(f"\n[5/6] Running competitive threat analysis...")
+    # ─── Stage 2: Claude API Threat Mapping ───
+    # Print the stage header
+    print(f"\n[Stage 2] Running startup → public company threat mapping...")
     # Initialize the Anthropic API client variable
     client = None
     # Check if this is not a dry run (we need the actual client)
@@ -1193,28 +1353,28 @@ def main():
             print("  Make sure ANTHROPIC_API_KEY is set in your environment.")
             # Exit the script
             return
-    # Group holdings by sector to minimize the number of API calls
-    sector_groups = group_holdings_by_sector(profiles, holdings_lookup)
-    # Initialize a master list to collect all identified threats
-    all_threats = []
-    # Initialize a set to track holdings with no threats
-    all_no_threats = set()
+    # Calculate how many batches we need based on the startups-per-batch setting
+    batch_size = args.startups_per_batch
+    # Calculate the total number of batches using ceiling division
+    total_batches = (len(companies) + batch_size - 1) // batch_size
+    # Print the batch plan
+    print(f"  Batching {len(companies)} startups into {total_batches} batch(es) of up to {batch_size}")
+    # Initialize a master list to collect all threat mappings from all batches
+    all_mappings = []
     # Track the timestamp of the last API call for rate limiting
     last_api_call = 0.0
-    # Initialize a counter for batch progress reporting
-    batch_num = 0
-    # Get the total number of batches for progress display
-    total_batches = len(sector_groups)
-    # Loop through each sector group to send batched API calls
-    for sector, holdings_batch in sector_groups.items():
-        # Increment the batch counter
-        batch_num += 1
+    # Loop through each batch of startups
+    for batch_idx in range(total_batches):
+        # Calculate the start index for this batch
+        start = batch_idx * batch_size
+        # Calculate the end index for this batch
+        end = min(start + batch_size, len(companies))
+        # Extract this batch of startups from the full list
+        batch = companies[start:end]
         # Print progress showing which batch we're on
-        print(f"\n  Batch {batch_num}/{total_batches}: {sector} ({len(holdings_batch)} holding(s))")
-        # Build the prompt for this batch of holdings
-        prompt, relevant_count = build_api_prompt(holdings_batch, companies)
-        # Print how many candidate companies passed the keyword filter
-        print(f"    {relevant_count} candidate companies after keyword filtering")
+        print(f"\n  Batch {batch_idx + 1}/{total_batches}: startups {start + 1}-{end}")
+        # Build the threat mapping prompt for this batch
+        prompt = build_threat_mapping_prompt(batch)
         # Apply rate limiting by waiting if less than 2 seconds since last call
         elapsed = time.time() - last_api_call
         # Check if we need to pause to respect the rate limit
@@ -1230,56 +1390,232 @@ def main():
         # Make the API call (or display the prompt in dry-run mode)
         response_text = call_anthropic_api(client, prompt, dry_run=args.dry_run)
         # Parse the structured JSON response from the API
-        threats, no_threats = parse_api_response(response_text)
-        # Print how many threats were found in this batch (skip for dry runs)
+        mappings = parse_threat_mapping_response(response_text)
+        # Print how many startups returned threat mappings in this batch
         if not args.dry_run:
-            # Display the threat count for this batch
-            print(f"    Identified {len(threats)} threat(s)")
-        # Add this batch's threats to the master list
-        all_threats.extend(threats)
-        # Add any no-threat tickers to the tracking set
-        all_no_threats.update(no_threats)
+            # Count startups with at least one threatened company
+            active = sum(1 for m in mappings if m.get("threatened_companies"))
+            # Display the mapping count
+            print(f"    {active} startup(s) with identified threats")
+        # Add this batch's mappings to the master list
+        all_mappings.extend(mappings)
 
     # If this was a dry run, show a summary and exit without generating reports
     if args.dry_run:
         # Print a dry run completion message
         print(f"\n=== DRY RUN COMPLETE ===")
         # Show how many API calls would have been made
-        print(f"Would have made {total_batches} API call(s)")
+        print(f"Would have made {total_batches} threat mapping API call(s)")
         # Tell the user how to run for real
         print("Remove --dry-run to execute the API calls.")
         # Exit
         return
 
-    # Step 6: Generate the output reports
-    print(f"\n[6/6] Generating reports...")
-    # Generate the markdown weekly digest report
-    md_path = generate_markdown_digest(
-        all_threats, holdings, profiles, args.portfolio_name, args.output_dir
+    # Flatten the mappings into individual threat pairs and deduplicate
+    threat_pairs = []
+    # Track seen (startup_name, ticker) pairs for deduplication
+    seen_pairs = set()
+    # Loop through each startup's mapping result
+    for mapping in all_mappings:
+        # Get the startup name from this mapping
+        startup_name = mapping.get("startup_name", "")
+        # Get the startup description
+        startup_desc = mapping.get("startup_description", "")
+        # Get the target market
+        target_market = mapping.get("target_market", "")
+        # Loop through each threatened company in this mapping
+        for threat in mapping.get("threatened_companies", []):
+            # Get the ticker of the threatened company
+            ticker = threat.get("ticker", "")
+            # Create a deduplication key from startup name and ticker
+            dedup_key = (startup_name.lower(), ticker.upper())
+            # Check if we've already seen this pair
+            if dedup_key in seen_pairs:
+                # Skip this duplicate pair
+                continue
+            # Add this pair to the seen set
+            seen_pairs.add(dedup_key)
+            # Build a flat threat pair record
+            pair = {
+                "startup_name": startup_name,
+                "startup_description": startup_desc,
+                "target_market": target_market,
+                "ticker": ticker,
+                "company_name": threat.get("company_name", ""),
+                "threat_type": threat.get("threat_type", ""),
+                "threat_score": threat.get("threat_score", 0),
+                "reasoning": threat.get("reasoning", ""),
+            }
+            # Add this pair to the master list
+            threat_pairs.append(pair)
+    # Print the deduplication results
+    print(f"\n  Total unique threat pairs: {len(threat_pairs)}")
+
+    # ─── Stage 3: Financial Evidence Layer ───
+    # Initialize an evidence dictionary keyed by ticker
+    evidence_by_ticker = {}
+    # Check if the user wants to skip the evidence stage
+    if args.skip_evidence:
+        # Print that evidence gathering is being skipped
+        print(f"\n[Stage 3] Skipping financial evidence (--skip-evidence flag set)")
+    # If not skipping, gather financial evidence
+    else:
+        # Print the stage header
+        print(f"\n[Stage 3a] Gathering yfinance financial evidence...")
+        # Check if yfinance is available
+        if yf is None:
+            # Print a warning that yfinance is not installed
+            print("  Warning: yfinance not installed. Install with: pip install yfinance")
+            # Print that evidence gathering will be skipped
+            print("  Skipping financial evidence layer.")
+        # If yfinance is available, proceed with data gathering
+        else:
+            # Collect all unique tickers from the threat pairs
+            unique_tickers = list(set(pair["ticker"] for pair in threat_pairs if pair.get("ticker")))
+            # Print how many tickers we need to look up
+            print(f"  Looking up financial data for {len(unique_tickers)} unique tickers...")
+            # Loop through each unique ticker to fetch evidence
+            for i, ticker in enumerate(unique_tickers):
+                # Print progress for every 10 tickers
+                if (i + 1) % 10 == 0 or i == 0:
+                    # Print the progress count
+                    print(f"    Processing ticker {i + 1}/{len(unique_tickers)}: {ticker}")
+                # Fetch the yfinance evidence for this ticker
+                evidence = fetch_yfinance_evidence(ticker)
+                # Store the evidence in the lookup dictionary
+                evidence_by_ticker[ticker] = evidence
+                # Add a 0.5-second delay between tickers to avoid rate limiting
+                if i < len(unique_tickers) - 1:
+                    # Pause to be respectful of yfinance's rate limits
+                    time.sleep(0.5)
+            # Count how many tickers had financial red flags
+            with_evidence = sum(1 for e in evidence_by_ticker.values() if e.get("evidence_strength", 0) > 0)
+            # Print how many tickers had financial red flags
+            print(f"  {with_evidence} of {len(unique_tickers)} tickers have financial red flags (evidence_strength > 0)")
+
+        # ─── Stage 3b: Qualitative Overlay (optional) ───
+        # Check if the user requested the qualitative overlay
+        if args.qualitative:
+            # Print the stage header
+            print(f"\n[Stage 3b] Running Claude + web search qualitative overlay...")
+            # Filter to tickers with evidence_strength >= 2 (don't waste API calls on clean companies)
+            qual_tickers = [
+                ticker for ticker, ev in evidence_by_ticker.items()
+                if ev.get("evidence_strength", 0) >= 2
+            ]
+            # Print how many tickers qualify for qualitative research
+            print(f"  {len(qual_tickers)} tickers qualify (evidence_strength >= 2)")
+            # Loop through qualifying tickers to fetch qualitative evidence
+            for i, ticker in enumerate(qual_tickers):
+                # Find the first threat pair for this ticker to get context
+                context_pair = next((p for p in threat_pairs if p["ticker"] == ticker), None)
+                # Skip if we can't find context
+                if context_pair is None:
+                    # Continue to the next ticker
+                    continue
+                # Print progress
+                print(f"    [{i + 1}/{len(qual_tickers)}] Researching {ticker} ({context_pair.get('company_name', '')})...")
+                # Fetch qualitative evidence from Claude + web search
+                qual_result = fetch_qualitative_evidence(
+                    client,
+                    ticker,
+                    context_pair.get("company_name", ""),
+                    context_pair.get("startup_name", ""),
+                    context_pair.get("target_market", ""),
+                    evidence_by_ticker[ticker].get("evidence_summary", ""),
+                )
+                # Merge the qualitative findings into the evidence dictionary
+                evidence_by_ticker[ticker]["qualitative_findings"] = qual_result.get("qualitative_findings", "")
+                # Store whether competitive pressure was confirmed
+                evidence_by_ticker[ticker]["competitive_pressure_confirmed"] = qual_result.get("competitive_pressure_confirmed", False)
+                # Add a 2-second delay between API calls to respect rate limits
+                if i < len(qual_tickers) - 1:
+                    # Pause to respect the API rate limit
+                    time.sleep(2.0)
+        # If qualitative flag is not set, skip this stage
+        else:
+            # Print that qualitative overlay is being skipped
+            print(f"\n[Stage 3b] Skipping qualitative overlay (use --qualitative to enable)")
+
+    # ─── Stage 4: Holdings Cross-Reference ───
+    # Initialize variables for the two report views
+    holdings_view = []
+    # Initialize the broad market view
+    broad_view = []
+    # Check if we should skip the holdings filter
+    if args.broad_only:
+        # Print that holdings filtering is being skipped
+        print(f"\n[Stage 4] Skipping holdings filter (--broad-only flag set)")
+        # Build the broad view directly from threat pairs with evidence
+        for pair in threat_pairs:
+            # Get the evidence for this ticker
+            evidence = evidence_by_ticker.get(pair["ticker"], {})
+            # Start with a copy of the threat pair data
+            record = dict(pair)
+            # Add evidence strength to the record
+            record["evidence_strength"] = evidence.get("evidence_strength", 0)
+            # Add the evidence summary
+            record["evidence_summary"] = evidence.get("evidence_summary", "No data")
+            # Add qualitative findings if available
+            record["qualitative_findings"] = evidence.get("qualitative_findings", "")
+            # Add to the broad market view
+            broad_view.append(record)
+    # If not broad-only, read holdings and cross-reference
+    else:
+        # Print the stage header
+        print(f"\n[Stage 4] Cross-referencing with portfolio holdings...")
+        # Read the portfolio holdings from the Excel file
+        holdings = read_holdings(args.holdings)
+        # Perform the cross-reference to split into two views
+        holdings_view, broad_view = cross_reference_holdings(threat_pairs, evidence_by_ticker, holdings)
+
+    # ─── Stage 5: Output Reports ───
+    # Print the stage header
+    print(f"\n[Stage 5] Generating output reports...")
+    # Generate the broad market digest (always)
+    market_md_path = generate_markdown_digest(
+        broad_view, args.portfolio_name, args.output_dir, report_type="market"
     )
-    # Generate the structured CSV file of all threats
-    csv_path = generate_threats_csv(all_threats, companies_lookup, args.output_dir)
+    # Initialize the holdings markdown path variable
+    holdings_md_path = None
+    # Generate the holdings digest if we have holdings data
+    if not args.broad_only and holdings_view:
+        # Generate the holdings-filtered digest
+        holdings_md_path = generate_markdown_digest(
+            holdings_view, args.portfolio_name, args.output_dir, report_type="holdings"
+        )
+    # Generate the combined CSV with all threat pairs
+    csv_path = generate_threats_csv(broad_view, companies_lookup, args.output_dir)
+
     # Print the final summary banner
     print(f"\n=== Analysis Complete ===")
-    # Print the count of holdings that were analyzed
-    print(f"  Holdings analyzed: {len(profiles)}")
-    # Print the total number of threats found
-    print(f"  Threats identified: {len(all_threats)}")
-    # Print the path to the markdown digest
-    print(f"  Digest: {md_path}")
+    # Print the total number of unique threat pairs
+    print(f"  Threat pairs: {len(broad_view)}")
+    # Print the holdings match count if applicable
+    if not args.broad_only:
+        # Print how many threat pairs match holdings
+        print(f"  Holdings matches: {len(holdings_view)}")
+    # Print the path to the market digest
+    print(f"  Market digest: {market_md_path}")
+    # Print the path to the holdings digest if it was generated
+    if holdings_md_path:
+        # Print the holdings digest path
+        print(f"  Holdings digest: {holdings_md_path}")
     # Print the path to the threats CSV
     print(f"  Threats CSV: {csv_path}")
 
     # Check if the user wants to send results via email
     if args.email:
-        # Print email step
-        print(f"\n[7/7] Sending email...")
+        # Print the email step
+        print(f"\n[Email] Sending digest email...")
         # Import the emailer module
         from emailer import load_config, send_email as send_threat_email
         # Load the email config
         email_config = load_config(args.config)
+        # Determine which markdown report to email (holdings if available, otherwise market)
+        md_to_email = holdings_md_path if holdings_md_path else market_md_path
         # Send the email with the CSV and markdown attachments
-        send_threat_email(email_config, csv_path, md_path, test_mode=args.test)
+        send_threat_email(email_config, csv_path, md_to_email, test_mode=args.test)
 
 
 # Run the main function only if this script is executed directly (not imported)
