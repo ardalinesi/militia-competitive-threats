@@ -163,8 +163,8 @@ def parse_args():
     parser.add_argument(
         "--startups-per-batch",
         type=int,
-        default=20,
-        help="Number of startups to send per API call (default: 20)",
+        default=25,
+        help="Number of startups to send per API call (default: 25)",
     )
     # Add a flag to skip the financial evidence stage entirely for faster testing
     parser.add_argument(
@@ -574,10 +574,10 @@ def call_anthropic_api(client, prompt, dry_run=False):
         return None
     # Try to make the actual API call
     try:
-        # Send the prompt to Claude Sonnet and wait for a response
+        # Send the prompt to Claude Sonnet with high token limit to avoid JSON truncation
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=4096,
+            max_tokens=16384,
             messages=[{"role": "user", "content": prompt}],
         )
         # Extract the text content from the first content block of the response
@@ -602,10 +602,10 @@ def call_anthropic_api_with_search(client, prompt):
         return None
     # Try to make the API call with web search tool
     try:
-        # Send the prompt to Claude Sonnet with web search enabled
+        # Send the prompt to Claude Sonnet with web search enabled and high token limit
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=4096,
+            max_tokens=16384,
             tools=[{"type": "web_search_20250305", "name": "web_search"}],
             messages=[{"role": "user", "content": prompt}],
         )
