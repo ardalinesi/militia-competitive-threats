@@ -157,6 +157,20 @@ def parse_args():
         default=25,
         help="Number of startups to send per API call (default: 25)",
     )
+    # Add a minimum employee count filter to proxy for ARR floor
+    parser.add_argument(
+        "--min-employees",
+        type=int,
+        default=None,
+        help="Minimum employee count filter (proxy for ARR floor, e.g. 250 ≈ $50M ARR)",
+    )
+    # Add a maximum employee count filter to proxy for ARR ceiling
+    parser.add_argument(
+        "--max-employees",
+        type=int,
+        default=None,
+        help="Maximum employee count filter (proxy for ARR ceiling, e.g. 10000 ≈ $2B ARR)",
+    )
     # Parse the arguments the user provided on the command line
     args = parser.parse_args()
     # Return the parsed arguments object
@@ -441,6 +455,91 @@ def filter_startups_by_scope(companies, scope):
     # Print how many companies passed the scope filter
     print(f"  Scope: software — filtered {len(companies)} startups down to {len(filtered)} software/SaaS/tech companies")
     # Return the filtered list of software-relevant startups
+    return filtered
+
+
+# Define a function to parse an employee count string into an integer (handles "1,418", "1418", "1.4K", etc.)
+def parse_employee_count(raw):
+    # If the value is empty or None, return None
+    if not raw:
+        return None
+    # Remove commas and whitespace from the string
+    cleaned = str(raw).strip().replace(",", "")
+    # Try to parse as a plain integer first
+    try:
+        return int(cleaned)
+    except ValueError:
+        pass
+    # Handle "K" suffix (e.g., "1.4K" = 1400)
+    if cleaned.upper().endswith("K"):
+        try:
+            return int(float(cleaned[:-1]) * 1000)
+        except ValueError:
+            pass
+    # Could not parse, return None
+    return None
+
+
+# Define a function to estimate ARR from employee count using $175K ARR-per-employee heuristic
+def estimate_arr_from_employees(employee_count):
+    # If we don't have an employee count, return None
+    if employee_count is None:
+        return None
+    # Multiply employee count by $175K (midpoint of $150-200K SaaS rule of thumb)
+    return employee_count * 175000
+
+
+# Define a function to format an ARR estimate as a readable string (e.g., "$87.5M")
+def format_arr_estimate(arr):
+    # If the ARR is None, return empty string
+    if arr is None:
+        return ""
+    # If the ARR is $1B or more, format in billions
+    if arr >= 1_000_000_000:
+        return f"${arr / 1_000_000_000:.1f}B"
+    # If the ARR is $1M or more, format in millions
+    if arr >= 1_000_000:
+        return f"${arr / 1_000_000:.0f}M"
+    # Otherwise format in thousands
+    return f"${arr / 1000:.0f}K"
+
+
+# Define a function to filter startups by employee count range (proxy for ARR band)
+def filter_startups_by_employees(companies, min_employees, max_employees):
+    # If neither filter is set, return all companies unchanged
+    if min_employees is None and max_employees is None:
+        return companies
+    # Initialize a list for companies that pass the filter
+    filtered = []
+    # Count how many companies we skip because they have no employee data
+    skipped_no_data = 0
+    # Loop through each company to check its employee count
+    for company in companies:
+        # Parse the employee count from the raw CSV value
+        emp_count = parse_employee_count(company.get("employees", ""))
+        # If we can't parse the employee count, skip this company
+        if emp_count is None:
+            skipped_no_data += 1
+            continue
+        # Check the minimum employee threshold
+        if min_employees is not None and emp_count < min_employees:
+            continue
+        # Check the maximum employee threshold
+        if max_employees is not None and emp_count > max_employees:
+            continue
+        # This company passes the employee filter, keep it
+        filtered.append(company)
+    # Build a filter description string for the log message
+    filter_desc = ""
+    if min_employees is not None and max_employees is not None:
+        filter_desc = f"{min_employees}-{max_employees} employees"
+    elif min_employees is not None:
+        filter_desc = f">= {min_employees} employees"
+    else:
+        filter_desc = f"<= {max_employees} employees"
+    # Print how many companies passed the employee filter
+    print(f"  Employee filter ({filter_desc}): {len(companies)} → {len(filtered)} startups ({skipped_no_data} skipped, no employee data)")
+    # Return the filtered list
     return filtered
 
 
@@ -746,7 +845,7 @@ def generate_classification_csv(classifications, output_dir):
     output_path = os.path.join(output_dir, f"startup_classifications_{today}.csv")
     # Create the output directory if it doesn't already exist
     os.makedirs(output_dir, exist_ok=True)
-    # Define the column headers for the CSV file
+    # Define the column headers for the CSV file (includes estimated_arr)
     fieldnames = [
         "startup_name",
         "strategy",
@@ -757,6 +856,7 @@ def generate_classification_csv(classifications, output_dir):
         "subsector",
         "ai_dependency",
         "competitive_advantage",
+        "estimated_arr",
         "funding",
         "growth",
         "employees",
@@ -772,6 +872,12 @@ def generate_classification_csv(classifications, output_dir):
         writer.writeheader()
         # Loop through each classification to write one row per startup
         for c in classifications:
+            # Parse the employee count to compute the ARR estimate
+            emp_count = parse_employee_count(c.get("employees", ""))
+            # Compute the estimated ARR from the employee count
+            arr_raw = estimate_arr_from_employees(emp_count)
+            # Format the ARR as a human-readable string
+            arr_str = format_arr_estimate(arr_raw)
             # Build the row from classification data
             row = {
                 "startup_name": c.get("startup_name", ""),
@@ -783,6 +889,7 @@ def generate_classification_csv(classifications, output_dir):
                 "subsector": c.get("subsector", ""),
                 "ai_dependency": c.get("ai_dependency", ""),
                 "competitive_advantage": c.get("competitive_advantage", ""),
+                "estimated_arr": arr_str,
                 "funding": c.get("funding", ""),
                 "growth": c.get("growth", ""),
                 "employees": c.get("employees", ""),
@@ -822,6 +929,14 @@ def main():
     if not companies:
         # Print an error about no companies matching the scope
         print("  Error: No startups match the selected scope filter.")
+        # Exit the script
+        return
+    # Apply employee count filter if --min-employees or --max-employees was provided
+    companies = filter_startups_by_employees(companies, args.min_employees, args.max_employees)
+    # Check if any companies passed the employee filter
+    if not companies:
+        # Print an error about no companies matching the employee range
+        print("  Error: No startups match the employee count filter.")
         # Exit the script
         return
     # Build a lookup dictionary from company name to company data for enriching output

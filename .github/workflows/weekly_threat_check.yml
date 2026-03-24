@@ -43,6 +43,8 @@ jobs:
             --csv-dir private_company_data \
             --portfolio-name "Militia" \
             --scope software \
+            --min-employees 250 \
+            --max-employees 10000 \
             --email
 
       - name: Run startup classification (test mode)
@@ -58,5 +60,7 @@ jobs:
             --csv-dir private_company_data \
             --portfolio-name "Militia" \
             --scope software \
+            --min-employees 250 \
+            --max-employees 10000 \
             --email \
             --test
