@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Disruption Monitor — Competitive Threat Tracker
-Starts from a startup universe, maps each startup to the public companies
-it threatens, gathers financial evidence, then optionally filters to
-portfolio holdings.
+Disruption Monitor — Startup Intelligence Classifier
+Loads a startup universe, classifies each startup on key dimensions
+(strategy, product, TAM, geography, industry, subsector, AI dependency,
+competitive advantage), and outputs a structured intelligence report.
 """
 
 # Import argparse to handle command-line arguments
@@ -102,13 +102,13 @@ except ImportError:
 def parse_args():
     # Create an argument parser with a description of the script's purpose
     parser = argparse.ArgumentParser(
-        description="Disruption Monitor: Identify threats to public companies from fast-growing startups"
+        description="Disruption Monitor: Classify fast-growing startups by strategy, product, TAM, industry, and competitive advantage"
     )
-    # Add a required argument for the path to the Excel holdings file
+    # Add an optional argument for the path to the Excel holdings file (no longer required)
     parser.add_argument(
         "--holdings",
-        required=True,
-        help="Path to Excel file containing portfolio holdings",
+        default=None,
+        help="Path to Excel file containing portfolio holdings (optional, for future cross-referencing)",
     )
     # Add an optional argument for the directory containing private company CSV files
     parser.add_argument(
@@ -165,24 +165,6 @@ def parse_args():
         type=int,
         default=25,
         help="Number of startups to send per API call (default: 25)",
-    )
-    # Add a flag to skip the financial evidence stage entirely for faster testing
-    parser.add_argument(
-        "--skip-evidence",
-        action="store_true",
-        help="Skip Stage 3 (financial evidence) entirely for faster testing",
-    )
-    # Add a flag to enable the optional Claude + web search qualitative overlay
-    parser.add_argument(
-        "--qualitative",
-        action="store_true",
-        help="Enable Stage 3b: Claude + web search qualitative overlay on top of yfinance data",
-    )
-    # Add a flag to skip the holdings filter and only produce the broad market report
-    parser.add_argument(
-        "--broad-only",
-        action="store_true",
-        help="Skip the holdings filter and only produce the broad market report",
     )
     # Parse the arguments the user provided on the command line
     args = parser.parse_args()
@@ -509,15 +491,21 @@ def format_startup_for_prompt(company):
     return "\n".join(parts)
 
 
-# Define a function to build the Stage 2 threat mapping prompt for a batch of startups
-def build_threat_mapping_prompt(startups_batch):
+# Define a function to build the Stage 2 startup classification prompt for a batch of startups
+def build_classification_prompt(startups_batch):
     # Start the prompt with the system instruction for the AI
-    prompt = """You are an equity research analyst. For each startup below, identify:
-1. What product/service/market it is targeting
-2. Which specific publicly traded companies (by ticker and name) are most exposed to disruption from this startup
-3. How the startup threatens them (revenue displacement, margin compression, market share loss)
+    prompt = """You are an equity research analyst specializing in private market intelligence. For each startup below, classify it on the following dimensions:
 
-Be specific — only list public companies where there is a clear, direct competitive overlap. Do not list tangentially related companies.
+1. **strategy**: The startup's strategic approach. One of: "disruptor" (directly attacking incumbents), "niche_specialist" (serving an underserved segment), "platform_play" (building an ecosystem/marketplace), "vertical_saas" (industry-specific software), "horizontal_tool" (cross-industry tool/infrastructure), "deep_tech" (R&D-heavy, novel technology), "marketplace" (connecting buyers and sellers), "other"
+2. **product_service**: A 1-2 sentence description of their core product or service offering
+3. **tam_estimate**: Estimated total addressable market size. One of: "micro" (<$1B), "small" ($1-10B), "medium" ($10-50B), "large" ($50-200B), "massive" (>$200B)
+4. **geographic_focus**: Primary geographic markets. One of: "us_only", "north_america", "europe", "asia", "global", "emerging_markets", "other"
+5. **industry**: The broad industry. Examples: "financial_services", "healthcare", "enterprise_software", "cybersecurity", "e_commerce", "logistics", "education", "energy", "media_entertainment", "real_estate", "agriculture", etc.
+6. **subsector**: A more specific subsector within the industry. Be precise — e.g., "accounts_payable_automation" not just "fintech", or "endpoint_detection_response" not just "cybersecurity"
+7. **ai_dependency**: How central is AI/ML to the company's competitive advantage? One of: "core" (AI is the product), "significant" (AI provides major differentiation), "moderate" (AI enhances but isn't central), "minimal" (little to no AI), "unknown"
+8. **competitive_advantage**: A 1-2 sentence description of their primary moat or competitive edge (e.g., proprietary data, network effects, switching costs, regulatory advantage, technical IP, brand, cost structure)
+
+Be specific and precise. Use only the information provided — do not hallucinate details. If you cannot determine a field from the data given, use "unknown".
 
 STARTUPS:
 """
@@ -531,21 +519,16 @@ Return ONLY a JSON array (no markdown fences, no extra text):
 [
   {
     "startup_name": "Startup Name",
-    "startup_description": "What they do",
-    "target_market": "The specific market/product category they compete in",
-    "threatened_companies": [
-      {
-        "ticker": "TICK",
-        "company_name": "Public Co Name",
-        "threat_type": "revenue | margins | market_share",
-        "threat_score": 1,
-        "reasoning": "1-2 sentence explanation"
-      }
-    ]
+    "strategy": "disruptor",
+    "product_service": "Description of what they do",
+    "tam_estimate": "medium",
+    "geographic_focus": "us_only",
+    "industry": "enterprise_software",
+    "subsector": "developer_tools",
+    "ai_dependency": "core",
+    "competitive_advantage": "Description of their moat"
   }
-]
-
-If a startup does not clearly threaten any public company, include it with an empty threatened_companies array."""
+]"""
     # Return the constructed prompt
     return prompt
 
@@ -629,11 +612,11 @@ def call_anthropic_api_with_search(client, prompt):
         return None
 
 
-# Define a function to parse the threat mapping JSON response from Stage 2
-def parse_threat_mapping_response(response_text):
+# Define a function to parse the startup classification JSON response from Stage 2
+def parse_classification_response(response_text):
     # If the response is None (dry run or error), return empty results
     if response_text is None:
-        # Return an empty list of threat mappings
+        # Return an empty list of classifications
         return []
     # Try to parse the response text as JSON
     try:
@@ -654,564 +637,136 @@ def parse_threat_mapping_response(response_text):
             # If it's a dict with a key containing the array, try to extract it
             if isinstance(data, dict):
                 # Check common wrapper keys that Claude might use
-                for key in ["results", "startups", "data", "threats"]:
+                for key in ["results", "startups", "data", "classifications"]:
                     # Check if this key contains a list
                     if key in data and isinstance(data[key], list):
                         # Use that list as the data
                         data = data[key]
                         # Break since we found it
                         break
-        # Return the parsed list of threat mappings
+        # Return the parsed list of classifications
         return data if isinstance(data, list) else []
     # Catch JSON parsing errors
     except (json.JSONDecodeError, ValueError) as e:
         # Print a warning about the parse failure
-        print(f"  Warning: Could not parse threat mapping response as JSON: {e}")
+        print(f"  Warning: Could not parse classification response as JSON: {e}")
         # Print a preview of the response for debugging purposes
         print(f"  Response preview: {response_text[:500]}")
         # Return empty results
         return []
 
 
-# Define a function to convert a Bloomberg-style ticker to a yfinance-compatible ticker
-def map_ticker_to_yfinance(ticker):
-    # Strip whitespace from the ticker
-    ticker = ticker.strip()
-    # Check if the ticker has a Japanese suffix and convert to Tokyo Stock Exchange format
-    if ticker.endswith(" JP"):
-        # Strip the " JP" suffix and append ".T" for Yahoo Finance's Tokyo exchange code
-        return ticker[:-3].strip() + ".T"
-    # Check if the ticker has a French suffix and convert to Paris exchange format
-    elif ticker.endswith(" FP"):
-        # Strip the " FP" suffix and append ".PA" for Yahoo Finance's Paris exchange code
-        return ticker[:-3].strip() + ".PA"
-    # Check if the ticker has a Mexican suffix and convert to Mexico exchange format
-    elif ticker.endswith(" MM"):
-        # Strip the " MM" suffix and append ".MX" for Yahoo Finance's Mexico exchange code
-        return ticker[:-3].strip() + ".MX"
-    # If no recognized suffix, return the ticker as-is (assumed US-listed)
-    return ticker
-
-
-# Define a function to strip market suffixes from a ticker for matching purposes
-def strip_ticker_suffix(ticker):
-    # Strip whitespace from the ticker
-    ticker = ticker.strip()
-    # Define the list of known Bloomberg market suffixes
-    suffixes = [" JP", " FP", " MM", " LN", " GR", " AU", " HK", " SP", " IT", " SM"]
-    # Loop through each suffix to check for a match
-    for suffix in suffixes:
-        # Check if the ticker ends with this suffix
-        if ticker.endswith(suffix):
-            # Return the ticker without the suffix
-            return ticker[:-len(suffix)].strip()
-    # No suffix found, return the ticker as-is
-    return ticker
-
-
-# Define a function to fetch financial evidence from yfinance for a single ticker (Stage 3a)
-def fetch_yfinance_evidence(ticker_raw):
-    # Convert the raw ticker to a yfinance-compatible format
-    yf_ticker = map_ticker_to_yfinance(ticker_raw)
-    # Initialize the evidence dictionary with default values
-    evidence = {
-        "ticker": ticker_raw,
-        "yf_ticker": yf_ticker,
-        "earnings_misses_last_4q": 0,
-        "revenue_trend": "unknown",
-        "revenue_qoq_changes": [],
-        "analyst_consensus": "unknown",
-        "recent_downgrades": 0,
-        "price_return_3m": None,
-        "price_return_6m": None,
-        "evidence_strength": 0,
-        "evidence_summary": "No financial data available",
-    }
-    # Check if yfinance is installed
-    if yf is None:
-        # Print a warning that yfinance is not available
-        print(f"    Warning: yfinance not installed, skipping evidence for {ticker_raw}")
-        # Return the default evidence dictionary
-        return evidence
-    # Try to fetch data from yfinance, wrapping everything in a try/except
-    try:
-        # Create a yfinance Ticker object for this stock
-        ticker_obj = yf.Ticker(yf_ticker)
-
-        # --- Earnings history: check for EPS misses ---
-        # Try to access earnings history data
-        try:
-            # Get the earnings history DataFrame (actual vs estimate EPS)
-            earnings_hist = ticker_obj.earnings_history
-            # Check if we got valid earnings data back
-            if earnings_hist is not None and not earnings_hist.empty:
-                # Take the last 4 quarters of earnings data
-                recent = earnings_hist.tail(4)
-                # Initialize a counter for earnings misses
-                misses = 0
-                # Loop through each row to check for misses
-                for _, row in recent.iterrows():
-                    # Try to extract actual and estimate EPS values
-                    try:
-                        # Get the actual EPS value from this row
-                        actual = row.get("epsActual", row.get("Reported EPS", None))
-                        # Get the estimated EPS value from this row
-                        estimate = row.get("epsEstimate", row.get("EPS Estimate", None))
-                        # Check if both values exist and actual is below estimate
-                        if actual is not None and estimate is not None and float(actual) < float(estimate):
-                            # Increment the miss counter
-                            misses += 1
-                    # Catch any conversion or access errors
-                    except (ValueError, TypeError):
-                        # Skip this row if we can't parse the values
-                        pass
-                # Store the number of earnings misses
-                evidence["earnings_misses_last_4q"] = misses
-        # Catch any errors accessing earnings history
-        except Exception:
-            # Leave the default value of 0 misses
-            pass
-
-        # --- Revenue trend: quarterly financials ---
-        # Try to access quarterly financial statements
-        try:
-            # Get the quarterly income statement data
-            q_financials = ticker_obj.quarterly_financials
-            # Check if we got valid financial data back
-            if q_financials is not None and not q_financials.empty:
-                # Look for a revenue row (could be labeled differently)
-                revenue_row = None
-                # Check common labels for the revenue line item
-                for label in ["Total Revenue", "Revenue", "Operating Revenue"]:
-                    # Check if this label exists in the financial data index
-                    if label in q_financials.index:
-                        # Use this row as the revenue data
-                        revenue_row = q_financials.loc[label]
-                        # Break since we found a match
-                        break
-                # Check if we found a revenue row with data
-                if revenue_row is not None and len(revenue_row) >= 2:
-                    # Sort by column date to ensure chronological order (oldest first)
-                    revenue_sorted = revenue_row.sort_index()
-                    # Take the last 4 quarters (or fewer if not enough data)
-                    recent_rev = revenue_sorted.tail(4)
-                    # Get the revenue values as a list
-                    rev_values = recent_rev.values.tolist()
-                    # Calculate quarter-over-quarter percentage changes
-                    qoq_changes = []
-                    # Loop through pairs of consecutive quarters to compute changes
-                    for i in range(1, len(rev_values)):
-                        # Check that the previous quarter's revenue is valid and non-zero
-                        if rev_values[i - 1] is not None and rev_values[i - 1] != 0 and rev_values[i] is not None:
-                            # Calculate the QoQ percentage change
-                            change = (rev_values[i] - rev_values[i - 1]) / abs(rev_values[i - 1])
-                            # Add this change to our list
-                            qoq_changes.append(round(change, 4))
-                    # Store the QoQ changes
-                    evidence["revenue_qoq_changes"] = qoq_changes
-                    # Determine the overall revenue trend from the changes
-                    if qoq_changes:
-                        # Count how many quarters had negative revenue growth
-                        declining_quarters = sum(1 for c in qoq_changes if c < 0)
-                        # If more than half the quarters declined, label as declining
-                        if declining_quarters > len(qoq_changes) / 2:
-                            # Set the trend to declining
-                            evidence["revenue_trend"] = "declining"
-                        # If more than half grew, label as growing
-                        elif declining_quarters < len(qoq_changes) / 2:
-                            # Set the trend to growing
-                            evidence["revenue_trend"] = "growing"
-                        # If exactly split, label as stable
-                        else:
-                            # Set the trend to stable
-                            evidence["revenue_trend"] = "stable"
-        # Catch any errors accessing quarterly financials
-        except Exception:
-            # Leave the default value
-            pass
-
-        # --- Analyst recommendations ---
-        # Try to access analyst recommendation data
-        try:
-            # Get the recommendations DataFrame
-            recs = ticker_obj.recommendations
-            # Check if we got valid recommendations data
-            if recs is not None and not recs.empty:
-                # Initialize a counter for recent downgrades
-                downgrade_count = 0
-                # Initialize the consensus variable
-                consensus = "unknown"
-                # Try to use recommendations_summary for consensus
-                try:
-                    # Get the recommendations summary
-                    rec_summary = ticker_obj.recommendations_summary
-                    # Check if summary data exists
-                    if rec_summary is not None and not rec_summary.empty:
-                        # Get the most recent period's data (first row)
-                        latest = rec_summary.iloc[0]
-                        # Count buy-side recommendations
-                        buy_count = int(latest.get("strongBuy", 0)) + int(latest.get("buy", 0))
-                        # Count hold recommendations
-                        hold_count = int(latest.get("hold", 0))
-                        # Count sell-side recommendations
-                        sell_count = int(latest.get("sell", 0)) + int(latest.get("strongSell", 0))
-                        # Determine consensus based on which category has the most
-                        if sell_count > buy_count and sell_count > hold_count:
-                            # Set consensus to sell
-                            consensus = "sell"
-                        # Check if buy recommendations dominate
-                        elif buy_count > sell_count and buy_count > hold_count:
-                            # Set consensus to buy
-                            consensus = "buy"
-                        # Otherwise default to hold
-                        else:
-                            # Set consensus to hold
-                            consensus = "hold"
-                # Catch errors accessing recommendations summary
-                except Exception:
-                    # Leave consensus as unknown
-                    pass
-                # Store the analyst consensus
-                evidence["analyst_consensus"] = consensus
-                # Try to count downgrades from the full recommendations history
-                try:
-                    # Check for common downgrade column patterns
-                    if "To Grade" in recs.columns and "Action" in recs.columns:
-                        # Loop through recommendation rows to count downgrades
-                        for _, row in recs.iterrows():
-                            # Check if this recommendation was a downgrade
-                            action = str(row.get("Action", "")).lower()
-                            # If the action contains "down", count it as a downgrade
-                            if "down" in action:
-                                # Increment the downgrade counter
-                                downgrade_count += 1
-                # Catch errors counting downgrades
-                except Exception:
-                    # Leave default value
-                    pass
-                # Store the downgrade count
-                evidence["recent_downgrades"] = downgrade_count
-        # Catch any errors accessing recommendations
-        except Exception:
-            # Leave default values
-            pass
-
-        # --- Price performance ---
-        # Try to fetch 6-month price history
-        try:
-            # Get 6 months of daily closing prices
-            hist = ticker_obj.history(period="6mo")
-            # Check if we got valid price history
-            if hist is not None and not hist.empty and len(hist) > 1:
-                # Get the most recent closing price
-                latest_price = hist["Close"].iloc[-1]
-                # Get the closing price from 6 months ago (first data point)
-                price_6m_ago = hist["Close"].iloc[0]
-                # Calculate 6-month return
-                if price_6m_ago > 0:
-                    # Compute the percentage return over 6 months
-                    evidence["price_return_6m"] = round((latest_price - price_6m_ago) / price_6m_ago, 4)
-                # Calculate 3-month return (approximately 63 trading days)
-                if len(hist) > 63:
-                    # Get the closing price from approximately 3 months ago
-                    price_3m_ago = hist["Close"].iloc[-63]
-                    # Check for valid price
-                    if price_3m_ago > 0:
-                        # Compute the percentage return over 3 months
-                        evidence["price_return_3m"] = round((latest_price - price_3m_ago) / price_3m_ago, 4)
-                # If less than 63 days of data, use the midpoint as a rough proxy
-                elif len(hist) > 2:
-                    # Use the midpoint of available data as a rough 3-month proxy
-                    mid_idx = len(hist) // 2
-                    # Get the price at the midpoint
-                    price_mid = hist["Close"].iloc[mid_idx]
-                    # Check for valid price
-                    if price_mid > 0:
-                        # Compute the return from midpoint to now
-                        evidence["price_return_3m"] = round((latest_price - price_mid) / price_mid, 4)
-        # Catch any errors accessing price history
-        except Exception:
-            # Leave default None values for price returns
-            pass
-
-    # Catch any top-level errors from yfinance (e.g., ticker not found)
-    except Exception as e:
-        # Print a warning about the yfinance failure
-        print(f"    Warning: yfinance lookup failed for {yf_ticker}: {e}")
-        # Return the evidence with defaults
-        return evidence
-
-    # Compute the evidence strength score from the structured data
-    evidence["evidence_strength"] = compute_evidence_strength(evidence)
-    # Auto-generate the evidence summary as a plain English string
-    evidence["evidence_summary"] = build_evidence_summary(evidence)
-    # Return the complete evidence dictionary
-    return evidence
-
-
-# Define a function to compute an evidence strength score (1-5) from structured yfinance data
-def compute_evidence_strength(evidence):
-    # Initialize the score at zero
-    score = 0
-    # Add 1 point if the company missed earnings at least once in the last 4 quarters
-    if evidence.get("earnings_misses_last_4q", 0) >= 1:
-        # Increment score for earnings misses
-        score += 1
-    # Add 1 point if revenue is trending downward
-    if evidence.get("revenue_trend") == "declining":
-        # Increment score for declining revenue
-        score += 1
-    # Add 1 point if there have been 2 or more analyst downgrades
-    if evidence.get("recent_downgrades", 0) >= 2:
-        # Increment score for analyst downgrades
-        score += 1
-    # Add 1 point if the stock has dropped more than 15% in 6 months
-    if evidence.get("price_return_6m") is not None and evidence["price_return_6m"] < -0.15:
-        # Increment score for poor price performance
-        score += 1
-    # Add 1 point if analyst consensus is sell or underweight
-    if evidence.get("analyst_consensus") in ("sell", "underweight"):
-        # Increment score for bearish consensus
-        score += 1
-    # Cap the score at a maximum of 5
-    return min(score, 5)
-
-
-# Define a function to auto-generate a plain English evidence summary from structured data
-def build_evidence_summary(evidence):
-    # Initialize a list to collect summary sentences
-    parts = []
-    # Add a sentence about earnings misses if any occurred
-    if evidence.get("earnings_misses_last_4q", 0) > 0:
-        # Build the earnings miss sentence
-        parts.append(f"Missed earnings {evidence['earnings_misses_last_4q']} of last 4 quarters.")
-    # Add a sentence about revenue trend if it's declining
-    if evidence.get("revenue_trend") == "declining":
-        # Build the revenue trend sentence
-        parts.append("Revenue declining QoQ.")
-    # Add a sentence about revenue trend if it's growing (positive signal)
-    elif evidence.get("revenue_trend") == "growing":
-        # Build the positive revenue sentence
-        parts.append("Revenue growing QoQ.")
-    # Add a sentence about analyst downgrades if any occurred
-    if evidence.get("recent_downgrades", 0) > 0:
-        # Build the downgrade sentence
-        parts.append(f"{evidence['recent_downgrades']} analyst downgrade(s) in recent months.")
-    # Add a sentence about analyst consensus
-    if evidence.get("analyst_consensus") not in ("unknown", None):
-        # Build the consensus sentence
-        parts.append(f"Analyst consensus: {evidence['analyst_consensus']}.")
-    # Add a sentence about 6-month price performance if available
-    if evidence.get("price_return_6m") is not None:
-        # Format the return as a percentage
-        pct = round(evidence["price_return_6m"] * 100, 1)
-        # Build the price performance sentence
-        parts.append(f"Stock {'up' if pct >= 0 else 'down'} {abs(pct)}% in 6 months.")
-    # If we have no data points at all, return the default message
-    if not parts:
-        # Return the no-data message
-        return "No financial data available"
-    # Join all the sentences into a single summary string
-    return " ".join(parts)
-
-
-# Define a function to fetch qualitative evidence using Claude + web search (Stage 3b)
-def fetch_qualitative_evidence(client, ticker, company_name, startup_name, target_market, evidence_summary):
-    # Build the prompt for qualitative research with web search
-    prompt = f"""Research competitive pressure on {company_name} ({ticker}) from {startup_name} in the {target_market} space.
-
-The company's financials already show: {evidence_summary}
-
-Look for:
-- Management commentary about competitive threats in recent earnings calls
-- News about losing customers or contracts to the startup or similar competitors
-- Industry reports about market share shifts in this space
-
-Return ONLY a JSON object (no markdown fences):
-{{
-  "ticker": "{ticker}",
-  "qualitative_findings": "2-3 sentence summary of what you found",
-  "competitive_pressure_confirmed": true
-}}"""
-    # Call the API with web search enabled
-    response_text = call_anthropic_api_with_search(client, prompt)
-    # If the API call failed, return a default result
-    if response_text is None:
-        # Return an empty qualitative result
-        return {"ticker": ticker, "qualitative_findings": "API call failed", "competitive_pressure_confirmed": False}
-    # Try to parse the response as JSON
-    try:
-        # Strip whitespace from the response
-        cleaned = response_text.strip()
-        # Check if Claude wrapped the JSON in markdown code fences
-        if cleaned.startswith("```"):
-            # Find the position of the first newline after the opening fence
-            first_newline = cleaned.index("\n")
-            # Find the position of the last closing code fence
-            last_fence = cleaned.rfind("```")
-            # Extract just the JSON content between the fences
-            cleaned = cleaned[first_newline + 1 : last_fence].strip()
-        # Parse the cleaned string as JSON
-        result = json.loads(cleaned)
-        # Return the parsed result
-        return result
-    # Catch JSON parsing errors
-    except (json.JSONDecodeError, ValueError) as e:
-        # Print a warning about the parse failure
-        print(f"    Warning: Could not parse qualitative response for {ticker}: {e}")
-        # Return a default result with the raw response text truncated
-        return {"ticker": ticker, "qualitative_findings": response_text[:300], "competitive_pressure_confirmed": False}
-
-
-# Define a function to cross-reference threat pairs against portfolio holdings (Stage 4)
-def cross_reference_holdings(threat_pairs, evidence_by_ticker, holdings):
-    # Create a lookup from stripped ticker to holding data for matching
-    holdings_lookup = {}
-    # Loop through each holding to build the lookup
-    for h in holdings:
-        # Get the raw ticker
-        raw_ticker = h["ticker"]
-        # Strip the market suffix for matching
-        stripped = strip_ticker_suffix(raw_ticker)
-        # Store the holding data under the stripped ticker
-        holdings_lookup[stripped] = h
-        # Also store under the raw ticker for exact matches
-        holdings_lookup[raw_ticker] = h
-    # Initialize the list for threat pairs that match holdings
-    holdings_view = []
-    # Initialize the list for all threat pairs (broad market view)
-    broad_view = []
-    # Loop through each threat pair to classify it
-    for pair in threat_pairs:
-        # Get the ticker of the threatened public company
-        ticker = pair.get("ticker", "")
-        # Strip the suffix for matching
-        stripped_ticker = strip_ticker_suffix(ticker)
-        # Get the financial evidence for this ticker if it exists
-        evidence = evidence_by_ticker.get(ticker, {})
-        # Build the combined record with threat data and evidence
-        record = {
-            "startup_name": pair.get("startup_name", ""),
-            "startup_description": pair.get("startup_description", ""),
-            "target_market": pair.get("target_market", ""),
-            "ticker": ticker,
-            "company_name": pair.get("company_name", ""),
-            "threat_type": pair.get("threat_type", ""),
-            "threat_score": pair.get("threat_score", 0),
-            "reasoning": pair.get("reasoning", ""),
-            "evidence_strength": evidence.get("evidence_strength", 0),
-            "evidence_summary": evidence.get("evidence_summary", "No data"),
-            "qualitative_findings": evidence.get("qualitative_findings", ""),
-        }
-        # Add this record to the broad market view (always)
-        broad_view.append(record)
-        # Check if this ticker matches any of our holdings
-        if ticker in holdings_lookup or stripped_ticker in holdings_lookup:
-            # Get the matching holding record
-            holding = holdings_lookup.get(ticker, holdings_lookup.get(stripped_ticker, {}))
-            # Create a copy of the record for the holdings view so we don't mutate the broad view
-            holdings_record = dict(record)
-            # Add the holding side (long/short) to the holdings record
-            holdings_record["holding_side"] = holding.get("side", "long")
-            # Add the holding's portfolio name
-            holdings_record["holding_name"] = holding.get("name", "")
-            # Add this record to the holdings-filtered view
-            holdings_view.append(holdings_record)
-    # Print the cross-reference results
-    print(f"  Holdings matches: {len(holdings_view)} threat pairs match current positions")
-    # Print the broad market count
-    print(f"  Broad market: {len(broad_view)} total threat pairs")
-    # Return both views
-    return holdings_view, broad_view
-
-
-# Define a function to generate a markdown threat digest report
-def generate_markdown_digest(threat_records, portfolio_name, output_dir, report_type="market"):
+# Define a function to generate a markdown startup classification digest
+def generate_classification_digest(classifications, portfolio_name, output_dir):
     # Get today's date formatted as YYYY-MM-DD
     today = datetime.now().strftime("%Y-%m-%d")
-    # Construct the output file name based on report type (holdings or market)
-    filename = f"threat_digest_{report_type}_{today}.md"
+    # Construct the output file name
+    filename = f"startup_intelligence_{today}.md"
     # Build the full output file path
     output_path = os.path.join(output_dir, filename)
     # Create the output directory if it doesn't already exist
     os.makedirs(output_dir, exist_ok=True)
-    # Sort threat records by threat score descending so the most severe appear first
-    sorted_records = sorted(threat_records, key=lambda x: x.get("threat_score", 0), reverse=True)
-    # Count the total number of threat pairs
-    total_threats = len(sorted_records)
-    # Count unique startups in this report
-    unique_startups = len(set(r.get("startup_name", "") for r in sorted_records))
-    # Count unique threatened public companies
-    unique_targets = len(set(r.get("ticker", "") for r in sorted_records))
+    # Count totals for the summary section
+    total = len(classifications)
+    # Count startups by strategy type
+    strategy_counts = {}
+    # Count startups by industry
+    industry_counts = {}
+    # Count startups where AI is core
+    ai_core_count = 0
+    # Loop through all classifications to compute summary stats
+    for c in classifications:
+        # Get the strategy value
+        strat = c.get("strategy", "unknown")
+        # Increment the strategy counter
+        strategy_counts[strat] = strategy_counts.get(strat, 0) + 1
+        # Get the industry value
+        ind = c.get("industry", "unknown")
+        # Increment the industry counter
+        industry_counts[ind] = industry_counts.get(ind, 0) + 1
+        # Check if AI is core to this startup
+        if c.get("ai_dependency") == "core":
+            # Increment the AI core counter
+            ai_core_count += 1
     # Initialize a list to build the markdown content line by line
     lines = []
-    # Build the report label based on whether this is the holdings or market view
-    report_label = "Holdings" if report_type == "holdings" else "Broad Market"
-    # Add the report title with the portfolio name and report type
-    lines.append(f"# Disruption Monitor — {portfolio_name} ({report_label})")
+    # Add the report title
+    lines.append(f"# Startup Intelligence Report — {portfolio_name}")
     # Add the report date
     lines.append(f"\n**Date:** {today}\n")
-    # Add the summary section header
+    # Add the summary section
     lines.append("## Summary\n")
-    # Add the count of threat pairs identified
-    lines.append(f"- **Threat pairs identified:** {total_threats}")
-    # Add the count of unique startups
-    lines.append(f"- **Unique startups:** {unique_startups}")
-    # Add the count of unique threatened companies
-    lines.append(f"- **Public companies threatened:** {unique_targets}")
-    # If this is a holdings report, add short position info
-    if report_type == "holdings":
-        # Count threats to short positions (portfolio-positive)
-        short_threats = sum(1 for r in sorted_records if r.get("holding_side") == "short")
-        # Add the short position count
-        lines.append(f"- **Short position threats (portfolio-positive):** {short_threats}")
-    # Add a blank line before the detailed findings
+    # Add the total startup count
+    lines.append(f"- **Startups classified:** {total}")
+    # Add the AI-core count
+    lines.append(f"- **AI-core startups:** {ai_core_count}")
+    # Add the industry breakdown
+    lines.append(f"- **Industries covered:** {len(industry_counts)}")
+    # Add blank line
     lines.append("")
-    # Add the detailed findings section header
-    lines.append("## Threat Pairs (by severity)\n")
-    # Loop through each threat record to add it to the report
-    for record in sorted_records:
-        # Get the numeric threat score
-        score = record.get("threat_score", 0)
-        # Map numeric scores to human-readable severity labels
-        severity_labels = {1: "Minor", 2: "Emerging", 3: "Moderate", 4: "Significant", 5: "Severe"}
-        # Look up the severity label for this score
-        severity = severity_labels.get(score, "Unknown")
+    # Add strategy breakdown
+    lines.append("### Strategy Breakdown\n")
+    # Sort strategies by count descending
+    for strat, count in sorted(strategy_counts.items(), key=lambda x: -x[1]):
+        # Add each strategy and its count
+        lines.append(f"- **{strat}:** {count}")
+    # Add blank line
+    lines.append("")
+    # Add industry breakdown
+    lines.append("### Industry Breakdown\n")
+    # Sort industries by count descending
+    for ind, count in sorted(industry_counts.items(), key=lambda x: -x[1]):
+        # Add each industry and its count
+        lines.append(f"- **{ind}:** {count}")
+    # Add blank line
+    lines.append("")
+    # Add the detailed classifications section
+    lines.append("## Startup Profiles\n")
+    # Sort by industry then startup name for organized reading
+    sorted_classifications = sorted(classifications, key=lambda x: (x.get("industry", ""), x.get("startup_name", "")))
+    # Track current industry for section grouping
+    current_industry = None
+    # Loop through each classified startup
+    for c in sorted_classifications:
+        # Get the industry for this startup
+        industry = c.get("industry", "unknown")
+        # Check if we're starting a new industry group
+        if industry != current_industry:
+            # Update the current industry tracker
+            current_industry = industry
+            # Add an industry subheading
+            lines.append(f"### {industry.replace('_', ' ').title()}\n")
         # Get the startup name
-        startup = record.get("startup_name", "Unknown Startup")
-        # Get the target company's ticker
-        ticker = record.get("ticker", "???")
-        # Get the target company's name
-        company_name = record.get("company_name", "Unknown")
-        # Add the threat pair header as a level-3 heading
-        lines.append(f"### {startup} → {company_name} ({ticker})")
-        # Add the threat score and severity
-        lines.append(f"- **Threat Score:** {score}/5 ({severity})")
-        # Add the threat type
-        lines.append(f"- **Threat Type:** {record.get('threat_type', 'N/A')}")
-        # Add the target market
-        lines.append(f"- **Target Market:** {record.get('target_market', 'N/A')}")
-        # Add the reasoning
-        lines.append(f"- **Reasoning:** {record.get('reasoning', 'No reasoning provided')}")
-        # Get the financial evidence summary
-        evidence_summary = record.get("evidence_summary", "")
-        # Check if there's evidence data to display
-        if evidence_summary and evidence_summary != "No data":
-            # Get the evidence strength score
-            ev_strength = record.get("evidence_strength", 0)
-            # Add the evidence line
-            lines.append(f"- **Financial Evidence ({ev_strength}/5):** {evidence_summary}")
-        # Get qualitative findings if available
-        qual = record.get("qualitative_findings", "")
-        # Check if there are qualitative findings to display
-        if qual:
-            # Add the qualitative findings line
-            lines.append(f"- **Qualitative:** {qual}")
-        # If this is a holdings report and the position is short, add a portfolio impact note
-        if report_type == "holdings" and record.get("holding_side") == "short":
-            # Add the portfolio-positive note for short positions
-            lines.append("- **Portfolio Impact:** POSITIVE — threat to a short position")
-        # Add a blank line between entries for readability
+        name = c.get("startup_name", "Unknown")
+        # Add the startup name as a bold entry
+        lines.append(f"**{name}**")
+        # Add the product/service description
+        lines.append(f"- **Product/Service:** {c.get('product_service', 'Unknown')}")
+        # Add the strategy
+        lines.append(f"- **Strategy:** {c.get('strategy', 'Unknown')}")
+        # Add the subsector
+        lines.append(f"- **Subsector:** {c.get('subsector', 'Unknown')}")
+        # Add the TAM estimate
+        lines.append(f"- **TAM:** {c.get('tam_estimate', 'Unknown')}")
+        # Add the geographic focus
+        lines.append(f"- **Geographic Focus:** {c.get('geographic_focus', 'Unknown')}")
+        # Add the AI dependency level
+        lines.append(f"- **AI Dependency:** {c.get('ai_dependency', 'Unknown')}")
+        # Add the competitive advantage
+        lines.append(f"- **Competitive Advantage:** {c.get('competitive_advantage', 'Unknown')}")
+        # Add enrichment data if available from the source CSV
+        if c.get("funding"):
+            # Add funding info
+            lines.append(f"- **Funding:** {c['funding']}")
+        # Check for growth data
+        if c.get("growth"):
+            # Add growth info
+            lines.append(f"- **Growth:** {c['growth']}")
+        # Check for employee data
+        if c.get("employees"):
+            # Add employee count
+            lines.append(f"- **Employees:** {c['employees']}")
+        # Add a blank line between entries
         lines.append("")
     # Add a horizontal rule before the footer
     lines.append("---")
@@ -1224,37 +779,36 @@ def generate_markdown_digest(threat_records, portfolio_name, output_dir, report_
         # Write the complete markdown content to the file
         f.write(content)
     # Print where the digest was saved
-    print(f"  {report_label} digest written to: {output_path}")
+    print(f"  Intelligence digest written to: {output_path}")
     # Return the output file path
     return output_path
 
 
-# Define a function to generate the combined CSV of all threat pairs and evidence
-def generate_threats_csv(threat_records, companies_lookup, output_dir):
+# Define a function to generate the startup classification CSV
+def generate_classification_csv(classifications, output_dir):
     # Get today's date formatted as YYYY-MM-DD
     today = datetime.now().strftime("%Y-%m-%d")
     # Construct the full output file path
-    output_path = os.path.join(output_dir, f"threats_{today}.csv")
+    output_path = os.path.join(output_dir, f"startup_classifications_{today}.csv")
     # Create the output directory if it doesn't already exist
     os.makedirs(output_dir, exist_ok=True)
     # Define the column headers for the CSV file
     fieldnames = [
         "startup_name",
-        "target_market",
-        "threatened_ticker",
-        "threatened_company",
-        "threat_score",
-        "threat_type",
-        "reasoning",
-        "evidence_strength",
-        "evidence_summary",
-        "qualitative_findings",
-        "holding_side",
-        "in_portfolio",
-        "startup_revenue",
-        "startup_growth",
-        "startup_funding",
-        "date_identified",
+        "strategy",
+        "product_service",
+        "tam_estimate",
+        "geographic_focus",
+        "industry",
+        "subsector",
+        "ai_dependency",
+        "competitive_advantage",
+        "funding",
+        "growth",
+        "employees",
+        "location",
+        "source_file",
+        "date_classified",
     ]
     # Open the CSV file for writing
     with open(output_path, "w", newline="") as f:
@@ -1262,37 +816,30 @@ def generate_threats_csv(threat_records, companies_lookup, output_dir):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         # Write the header row to the CSV
         writer.writeheader()
-        # Loop through each threat record to write one row per threat pair
-        for record in threat_records:
-            # Get the startup name for looking up additional data from the CSV source
-            startup_name = record.get("startup_name", "")
-            # Look up this startup's data from the private companies for enrichment
-            startup_data = companies_lookup.get(startup_name, {})
-            # Determine if this threat pair is in the portfolio
-            in_portfolio = "yes" if record.get("holding_side") else "no"
-            # Build the complete row with threat data, evidence, and enrichment data
+        # Loop through each classification to write one row per startup
+        for c in classifications:
+            # Build the row from classification data
             row = {
-                "startup_name": startup_name,
-                "target_market": record.get("target_market", ""),
-                "threatened_ticker": record.get("ticker", ""),
-                "threatened_company": record.get("company_name", ""),
-                "threat_score": record.get("threat_score", ""),
-                "threat_type": record.get("threat_type", ""),
-                "reasoning": record.get("reasoning", ""),
-                "evidence_strength": record.get("evidence_strength", ""),
-                "evidence_summary": record.get("evidence_summary", ""),
-                "qualitative_findings": record.get("qualitative_findings", ""),
-                "holding_side": record.get("holding_side", ""),
-                "in_portfolio": in_portfolio,
-                "startup_revenue": startup_data.get("revenue", ""),
-                "startup_growth": startup_data.get("growth", ""),
-                "startup_funding": startup_data.get("funding", ""),
-                "date_identified": today,
+                "startup_name": c.get("startup_name", ""),
+                "strategy": c.get("strategy", ""),
+                "product_service": c.get("product_service", ""),
+                "tam_estimate": c.get("tam_estimate", ""),
+                "geographic_focus": c.get("geographic_focus", ""),
+                "industry": c.get("industry", ""),
+                "subsector": c.get("subsector", ""),
+                "ai_dependency": c.get("ai_dependency", ""),
+                "competitive_advantage": c.get("competitive_advantage", ""),
+                "funding": c.get("funding", ""),
+                "growth": c.get("growth", ""),
+                "employees": c.get("employees", ""),
+                "location": c.get("location", ""),
+                "source_file": c.get("source_file", ""),
+                "date_classified": today,
             }
             # Write this row to the CSV file
             writer.writerow(row)
     # Print where the CSV was saved and how many rows were written
-    print(f"  Threats CSV written to: {output_path} ({len(threat_records)} threat pairs)")
+    print(f"  Classifications CSV written to: {output_path} ({len(classifications)} startups)")
     # Return the output file path
     return output_path
 
@@ -1302,7 +849,7 @@ def main():
     # Parse command-line arguments provided by the user
     args = parse_args()
     # Print a startup banner
-    print("\n=== Disruption Monitor ===\n")
+    print("\n=== Disruption Monitor — Startup Intelligence ===\n")
 
     # ─── Stage 1: Load Startup Universe ───
     # Print the stage header
@@ -1326,9 +873,9 @@ def main():
     # Build a lookup dictionary from company name to company data for enriching output
     companies_lookup = {c["company_name"]: c for c in companies}
 
-    # ─── Stage 2: Claude API Threat Mapping ───
+    # ─── Stage 2: Startup Classification via Claude API ───
     # Print the stage header
-    print(f"\n[Stage 2] Running startup → public company threat mapping...")
+    print(f"\n[Stage 2] Classifying startups (strategy, product, TAM, geo, industry, subsector, AI, moat)...")
     # Initialize the Anthropic API client variable
     client = None
     # Check if this is not a dry run (we need the actual client)
@@ -1359,8 +906,8 @@ def main():
     total_batches = (len(companies) + batch_size - 1) // batch_size
     # Print the batch plan
     print(f"  Batching {len(companies)} startups into {total_batches} batch(es) of up to {batch_size}")
-    # Initialize a master list to collect all threat mappings from all batches
-    all_mappings = []
+    # Initialize a master list to collect all classifications from all batches
+    all_classifications = []
     # Track the timestamp of the last API call for rate limiting
     last_api_call = 0.0
     # Loop through each batch of startups
@@ -1373,8 +920,8 @@ def main():
         batch = companies[start:end]
         # Print progress showing which batch we're on
         print(f"\n  Batch {batch_idx + 1}/{total_batches}: startups {start + 1}-{end}")
-        # Build the threat mapping prompt for this batch
-        prompt = build_threat_mapping_prompt(batch)
+        # Build the classification prompt for this batch
+        prompt = build_classification_prompt(batch)
         # Apply rate limiting by waiting if less than 2 seconds since last call
         elapsed = time.time() - last_api_call
         # Check if we need to pause to respect the rate limit
@@ -1390,232 +937,83 @@ def main():
         # Make the API call (or display the prompt in dry-run mode)
         response_text = call_anthropic_api(client, prompt, dry_run=args.dry_run)
         # Parse the structured JSON response from the API
-        mappings = parse_threat_mapping_response(response_text)
-        # Print how many startups returned threat mappings in this batch
+        batch_classifications = parse_classification_response(response_text)
+        # Print how many startups were successfully classified in this batch
         if not args.dry_run:
-            # Count startups with at least one threatened company
-            active = sum(1 for m in mappings if m.get("threatened_companies"))
-            # Display the mapping count
-            print(f"    {active} startup(s) with identified threats")
-        # Add this batch's mappings to the master list
-        all_mappings.extend(mappings)
+            # Display the classification count
+            print(f"    {len(batch_classifications)} startup(s) classified")
+        # Add this batch's classifications to the master list
+        all_classifications.extend(batch_classifications)
 
     # If this was a dry run, show a summary and exit without generating reports
     if args.dry_run:
         # Print a dry run completion message
         print(f"\n=== DRY RUN COMPLETE ===")
         # Show how many API calls would have been made
-        print(f"Would have made {total_batches} threat mapping API call(s)")
+        print(f"Would have made {total_batches} classification API call(s)")
         # Tell the user how to run for real
         print("Remove --dry-run to execute the API calls.")
         # Exit
         return
 
-    # Flatten the mappings into individual threat pairs and deduplicate
-    threat_pairs = []
-    # Track seen (startup_name, ticker) pairs for deduplication
-    seen_pairs = set()
-    # Loop through each startup's mapping result
-    for mapping in all_mappings:
-        # Get the startup name from this mapping
-        startup_name = mapping.get("startup_name", "")
-        # Get the startup description
-        startup_desc = mapping.get("startup_description", "")
-        # Get the target market
-        target_market = mapping.get("target_market", "")
-        # Loop through each threatened company in this mapping
-        for threat in mapping.get("threatened_companies", []):
-            # Get the ticker of the threatened company
-            ticker = threat.get("ticker", "")
-            # Create a deduplication key from startup name and ticker
-            dedup_key = (startup_name.lower(), ticker.upper())
-            # Check if we've already seen this pair
-            if dedup_key in seen_pairs:
-                # Skip this duplicate pair
-                continue
-            # Add this pair to the seen set
-            seen_pairs.add(dedup_key)
-            # Build a flat threat pair record
-            pair = {
-                "startup_name": startup_name,
-                "startup_description": startup_desc,
-                "target_market": target_market,
-                "ticker": ticker,
-                "company_name": threat.get("company_name", ""),
-                "threat_type": threat.get("threat_type", ""),
-                "threat_score": threat.get("threat_score", 0),
-                "reasoning": threat.get("reasoning", ""),
-            }
-            # Add this pair to the master list
-            threat_pairs.append(pair)
-    # Print the deduplication results
-    print(f"\n  Total unique threat pairs: {len(threat_pairs)}")
+    # Enrich classifications with source CSV data (funding, growth, employees, location)
+    enriched = []
+    # Track which startups were classified by name for deduplication
+    seen_names = set()
+    # Loop through each classification to enrich it
+    for c in all_classifications:
+        # Get the startup name from the classification
+        name = c.get("startup_name", "")
+        # Skip duplicates (same startup classified in overlapping batches)
+        if name.lower() in seen_names:
+            # Continue to the next classification
+            continue
+        # Add this name to the seen set
+        seen_names.add(name.lower())
+        # Look up the original CSV data for this startup
+        source_data = companies_lookup.get(name, {})
+        # Merge the source CSV fields into the classification
+        c["funding"] = source_data.get("funding", "")
+        # Add growth data from the source
+        c["growth"] = source_data.get("growth", "")
+        # Add employee data from the source
+        c["employees"] = source_data.get("employees", "")
+        # Add location data from the source
+        c["location"] = source_data.get("location", "")
+        # Add the source file name
+        c["source_file"] = source_data.get("source_file", "")
+        # Add the enriched classification to the list
+        enriched.append(c)
+    # Print the classification results
+    print(f"\n  Total startups classified: {len(enriched)}")
 
-    # ─── Stage 3: Financial Evidence Layer ───
-    # Initialize an evidence dictionary keyed by ticker
-    evidence_by_ticker = {}
-    # Check if the user wants to skip the evidence stage
-    if args.skip_evidence:
-        # Print that evidence gathering is being skipped
-        print(f"\n[Stage 3] Skipping financial evidence (--skip-evidence flag set)")
-    # If not skipping, gather financial evidence
-    else:
-        # Print the stage header
-        print(f"\n[Stage 3a] Gathering yfinance financial evidence...")
-        # Check if yfinance is available
-        if yf is None:
-            # Print a warning that yfinance is not installed
-            print("  Warning: yfinance not installed. Install with: pip install yfinance")
-            # Print that evidence gathering will be skipped
-            print("  Skipping financial evidence layer.")
-        # If yfinance is available, proceed with data gathering
-        else:
-            # Collect all unique tickers from the threat pairs
-            unique_tickers = list(set(pair["ticker"] for pair in threat_pairs if pair.get("ticker")))
-            # Print how many tickers we need to look up
-            print(f"  Looking up financial data for {len(unique_tickers)} unique tickers...")
-            # Loop through each unique ticker to fetch evidence
-            for i, ticker in enumerate(unique_tickers):
-                # Print progress for every 10 tickers
-                if (i + 1) % 10 == 0 or i == 0:
-                    # Print the progress count
-                    print(f"    Processing ticker {i + 1}/{len(unique_tickers)}: {ticker}")
-                # Fetch the yfinance evidence for this ticker
-                evidence = fetch_yfinance_evidence(ticker)
-                # Store the evidence in the lookup dictionary
-                evidence_by_ticker[ticker] = evidence
-                # Add a 0.5-second delay between tickers to avoid rate limiting
-                if i < len(unique_tickers) - 1:
-                    # Pause to be respectful of yfinance's rate limits
-                    time.sleep(0.5)
-            # Count how many tickers had financial red flags
-            with_evidence = sum(1 for e in evidence_by_ticker.values() if e.get("evidence_strength", 0) > 0)
-            # Print how many tickers had financial red flags
-            print(f"  {with_evidence} of {len(unique_tickers)} tickers have financial red flags (evidence_strength > 0)")
-
-        # ─── Stage 3b: Qualitative Overlay (optional) ───
-        # Check if the user requested the qualitative overlay
-        if args.qualitative:
-            # Print the stage header
-            print(f"\n[Stage 3b] Running Claude + web search qualitative overlay...")
-            # Filter to tickers with evidence_strength >= 2 (don't waste API calls on clean companies)
-            qual_tickers = [
-                ticker for ticker, ev in evidence_by_ticker.items()
-                if ev.get("evidence_strength", 0) >= 2
-            ]
-            # Print how many tickers qualify for qualitative research
-            print(f"  {len(qual_tickers)} tickers qualify (evidence_strength >= 2)")
-            # Loop through qualifying tickers to fetch qualitative evidence
-            for i, ticker in enumerate(qual_tickers):
-                # Find the first threat pair for this ticker to get context
-                context_pair = next((p for p in threat_pairs if p["ticker"] == ticker), None)
-                # Skip if we can't find context
-                if context_pair is None:
-                    # Continue to the next ticker
-                    continue
-                # Print progress
-                print(f"    [{i + 1}/{len(qual_tickers)}] Researching {ticker} ({context_pair.get('company_name', '')})...")
-                # Fetch qualitative evidence from Claude + web search
-                qual_result = fetch_qualitative_evidence(
-                    client,
-                    ticker,
-                    context_pair.get("company_name", ""),
-                    context_pair.get("startup_name", ""),
-                    context_pair.get("target_market", ""),
-                    evidence_by_ticker[ticker].get("evidence_summary", ""),
-                )
-                # Merge the qualitative findings into the evidence dictionary
-                evidence_by_ticker[ticker]["qualitative_findings"] = qual_result.get("qualitative_findings", "")
-                # Store whether competitive pressure was confirmed
-                evidence_by_ticker[ticker]["competitive_pressure_confirmed"] = qual_result.get("competitive_pressure_confirmed", False)
-                # Add a 2-second delay between API calls to respect rate limits
-                if i < len(qual_tickers) - 1:
-                    # Pause to respect the API rate limit
-                    time.sleep(2.0)
-        # If qualitative flag is not set, skip this stage
-        else:
-            # Print that qualitative overlay is being skipped
-            print(f"\n[Stage 3b] Skipping qualitative overlay (use --qualitative to enable)")
-
-    # ─── Stage 4: Holdings Cross-Reference ───
-    # Initialize variables for the two report views
-    holdings_view = []
-    # Initialize the broad market view
-    broad_view = []
-    # Check if we should skip the holdings filter
-    if args.broad_only:
-        # Print that holdings filtering is being skipped
-        print(f"\n[Stage 4] Skipping holdings filter (--broad-only flag set)")
-        # Build the broad view directly from threat pairs with evidence
-        for pair in threat_pairs:
-            # Get the evidence for this ticker
-            evidence = evidence_by_ticker.get(pair["ticker"], {})
-            # Start with a copy of the threat pair data
-            record = dict(pair)
-            # Add evidence strength to the record
-            record["evidence_strength"] = evidence.get("evidence_strength", 0)
-            # Add the evidence summary
-            record["evidence_summary"] = evidence.get("evidence_summary", "No data")
-            # Add qualitative findings if available
-            record["qualitative_findings"] = evidence.get("qualitative_findings", "")
-            # Add to the broad market view
-            broad_view.append(record)
-    # If not broad-only, read holdings and cross-reference
-    else:
-        # Print the stage header
-        print(f"\n[Stage 4] Cross-referencing with portfolio holdings...")
-        # Read the portfolio holdings from the Excel file
-        holdings = read_holdings(args.holdings)
-        # Perform the cross-reference to split into two views
-        holdings_view, broad_view = cross_reference_holdings(threat_pairs, evidence_by_ticker, holdings)
-
-    # ─── Stage 5: Output Reports ───
+    # ─── Stage 3: Output Reports ───
     # Print the stage header
-    print(f"\n[Stage 5] Generating output reports...")
-    # Generate the broad market digest (always)
-    market_md_path = generate_markdown_digest(
-        broad_view, args.portfolio_name, args.output_dir, report_type="market"
-    )
-    # Initialize the holdings markdown path variable
-    holdings_md_path = None
-    # Generate the holdings digest if we have holdings data
-    if not args.broad_only and holdings_view:
-        # Generate the holdings-filtered digest
-        holdings_md_path = generate_markdown_digest(
-            holdings_view, args.portfolio_name, args.output_dir, report_type="holdings"
-        )
-    # Generate the combined CSV with all threat pairs
-    csv_path = generate_threats_csv(broad_view, companies_lookup, args.output_dir)
+    print(f"\n[Stage 3] Generating output reports...")
+    # Generate the classification CSV
+    csv_path = generate_classification_csv(enriched, args.output_dir)
+    # Generate the markdown intelligence digest
+    md_path = generate_classification_digest(enriched, args.portfolio_name, args.output_dir)
 
     # Print the final summary banner
-    print(f"\n=== Analysis Complete ===")
-    # Print the total number of unique threat pairs
-    print(f"  Threat pairs: {len(broad_view)}")
-    # Print the holdings match count if applicable
-    if not args.broad_only:
-        # Print how many threat pairs match holdings
-        print(f"  Holdings matches: {len(holdings_view)}")
-    # Print the path to the market digest
-    print(f"  Market digest: {market_md_path}")
-    # Print the path to the holdings digest if it was generated
-    if holdings_md_path:
-        # Print the holdings digest path
-        print(f"  Holdings digest: {holdings_md_path}")
-    # Print the path to the threats CSV
-    print(f"  Threats CSV: {csv_path}")
+    print(f"\n=== Classification Complete ===")
+    # Print the total number of startups classified
+    print(f"  Startups classified: {len(enriched)}")
+    # Print the path to the intelligence digest
+    print(f"  Intelligence digest: {md_path}")
+    # Print the path to the classifications CSV
+    print(f"  Classifications CSV: {csv_path}")
 
     # Check if the user wants to send results via email
     if args.email:
         # Print the email step
-        print(f"\n[Email] Sending digest email...")
+        print(f"\n[Email] Sending intelligence email...")
         # Import the emailer module
-        from emailer import load_config, send_email as send_threat_email
+        from emailer import load_config, send_email as send_intelligence_email
         # Load the email config
         email_config = load_config(args.config)
-        # Determine which markdown report to email (holdings if available, otherwise market)
-        md_to_email = holdings_md_path if holdings_md_path else market_md_path
         # Send the email with the CSV and markdown attachments
-        send_threat_email(email_config, csv_path, md_to_email, test_mode=args.test)
+        send_intelligence_email(email_config, csv_path, md_path, test_mode=args.test)
 
 
 # Run the main function only if this script is executed directly (not imported)

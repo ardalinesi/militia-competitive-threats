@@ -1,4 +1,4 @@
-name: Weekly Competitive Threat Check
+name: Weekly Startup Intelligence Report
 
 on:
   # Run every Monday at 3:00 PM UTC (9:00 AM CT)
@@ -15,7 +15,7 @@ on:
         type: boolean
 
 jobs:
-  threat-check:
+  startup-classification:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run competitive threat analysis (production)
+      - name: Run startup classification (production)
         if: ${{ github.event_name == 'schedule' || github.event.inputs.test_mode == 'false' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -40,13 +40,12 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           python competitive_threat_tracker.py \
-            --holdings holdings/liquidity_check_latest.xlsx \
             --csv-dir private_company_data \
             --portfolio-name "Militia" \
             --scope software \
             --email
 
-      - name: Run competitive threat analysis (test mode)
+      - name: Run startup classification (test mode)
         if: ${{ github.event.inputs.test_mode == 'true' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -56,7 +55,6 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           python competitive_threat_tracker.py \
-            --holdings holdings/liquidity_check_latest.xlsx \
             --csv-dir private_company_data \
             --portfolio-name "Militia" \
             --scope software \

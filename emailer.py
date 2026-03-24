@@ -60,8 +60,8 @@ def read_threats_csv(csv_path):
     return threats
 
 
-# Define a function to build the HTML email body from the threats data
-def build_email_html(threats, portfolio_name, date_str):
+# Define a function to build the HTML email body from the classification data
+def build_email_html(startups, portfolio_name, date_str):
     # Start the HTML document with inline CSS styling
     html = f"""
     <html>
@@ -74,121 +74,108 @@ def build_email_html(threats, portfolio_name, date_str):
             th {{ background-color: #4472C4; color: white; padding: 8px 12px; text-align: left; font-size: 13px; }}
             td {{ padding: 6px 12px; border-bottom: 1px solid #ddd; font-size: 13px; }}
             tr:nth-child(even) {{ background-color: #f9f9f9; }}
-            .score-1 {{ color: #666; }}
-            .score-2 {{ color: #b8860b; }}
-            .score-3 {{ color: #e67e00; font-weight: bold; }}
-            .score-4 {{ color: #d32f2f; font-weight: bold; }}
-            .score-5 {{ color: #b71c1c; font-weight: bold; }}
-            .short-tag {{ background-color: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }}
-            .long-tag {{ background-color: #fff3e0; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
-            .evidence-high {{ color: #d32f2f; font-weight: bold; }}
-            .evidence-low {{ color: #666; }}
+            .ai-core {{ background-color: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }}
+            .ai-significant {{ background-color: #f3e5f5; color: #7b1fa2; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
+            .ai-moderate {{ color: #666; font-size: 11px; }}
+            .ai-minimal {{ color: #999; font-size: 11px; }}
+            .strategy-tag {{ background-color: #fff3e0; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 11px; }}
             .summary {{ background-color: #f5f5f5; padding: 12px 16px; border-radius: 6px; margin: 12px 0; }}
             .footer {{ color: #999; font-size: 11px; margin-top: 24px; }}
         </style>
     </head>
     <body>
-        <h1>Disruption Monitor &mdash; {portfolio_name}</h1>
+        <h1>Startup Intelligence Report &mdash; {portfolio_name}</h1>
         <p><strong>Date:</strong> {date_str}</p>
     """
-    # Add the summary section with threat counts
-    total_threats = len(threats)
-    # Count unique threatened public companies from the CSV data
-    unique_targets = len(set(t.get("threatened_ticker", t.get("holding_ticker", "")) for t in threats))
-    # Count threats to short positions (portfolio-positive)
-    short_threats = sum(1 for t in threats if t.get("holding_side") == "short")
+    # Add the summary section with classification counts
+    total = len(startups)
+    # Count unique industries from the CSV data
+    unique_industries = len(set(t.get("industry", "") for t in startups))
+    # Count AI-core startups
+    ai_core = sum(1 for t in startups if t.get("ai_dependency") == "core")
     # Build the summary box
     html += f"""
         <div class="summary">
-            <strong>Total threat pairs:</strong> {total_threats} &nbsp;|&nbsp;
-            <strong>Public companies threatened:</strong> {unique_targets} &nbsp;|&nbsp;
-            <strong>Short position threats (portfolio-positive):</strong> {short_threats}
+            <strong>Startups classified:</strong> {total} &nbsp;|&nbsp;
+            <strong>Industries:</strong> {unique_industries} &nbsp;|&nbsp;
+            <strong>AI-core startups:</strong> {ai_core}
         </div>
     """
-    # Check if there are any threats to display
-    if threats:
-        # Add the threats table header with updated column names for the new pipeline
+    # Check if there are any startups to display
+    if startups:
+        # Add the classification table header
         html += """
-        <h2>Identified Threats</h2>
+        <h2>Startup Classifications</h2>
         <table>
             <tr>
-                <th>Startup (Disruptor)</th>
-                <th>Target Company</th>
-                <th>Side</th>
-                <th>Score</th>
-                <th>Type</th>
-                <th>Reasoning</th>
-                <th>Evidence</th>
-                <th>Startup Growth</th>
+                <th>Startup</th>
+                <th>Industry / Subsector</th>
+                <th>Strategy</th>
+                <th>Product/Service</th>
+                <th>TAM</th>
+                <th>AI Dependency</th>
+                <th>Competitive Advantage</th>
+                <th>Funding</th>
             </tr>
         """
-        # Loop through each threat to add a table row
-        for t in threats:
-            # Get the threat score for CSS class assignment
-            score = t.get("threat_score", "")
-            # Map the score to a severity label
-            severity_map = {"1": "Minor", "2": "Emerging", "3": "Moderate", "4": "Significant", "5": "Severe"}
-            # Get the severity label for this score
-            severity = severity_map.get(str(score), "")
-            # Determine the CSS class for the score color
-            score_class = f"score-{score}" if str(score) in "12345" else ""
-            # Determine the side tag (short = green/positive, long = orange/warning)
-            side = t.get("holding_side", "")
-            # Build the side tag HTML based on the position side
-            if side == "short":
-                # Short positions: threats are portfolio-positive
-                side_html = '<span class="short-tag">SHORT &#x2714;</span>'
-            elif side == "long":
-                # Long positions: threats are a concern
-                side_html = '<span class="long-tag">LONG</span>'
-            else:
-                # No portfolio position (broad market view)
-                side_html = '<span style="color: #999;">—</span>'
-            # Get the startup name (the disruptor)
-            startup_name = t.get("startup_name", t.get("threat_company", ""))
-            # Get the threatened public company name and ticker
-            target_ticker = t.get("threatened_ticker", t.get("holding_ticker", ""))
-            # Get the target company name
-            target_name = t.get("threatened_company", t.get("holding_name", ""))
-            # Build the target company display string
-            target_display = f"{target_name} ({target_ticker})" if target_name else target_ticker
-            # Get the evidence strength score if available
-            ev_strength = t.get("evidence_strength", "")
-            # Build the evidence display string
-            if ev_strength:
-                # Determine the CSS class based on evidence strength
-                ev_class = "evidence-high" if int(ev_strength) >= 3 else "evidence-low"
-                # Format the evidence score
-                ev_html = f'<span class="{ev_class}">{ev_strength}/5</span>'
-            else:
-                # No evidence data available
-                ev_html = "N/A"
-            # Get startup growth rate for display
-            growth = t.get("startup_growth", t.get("threat_growth", ""))
-            # Format the growth display
-            growth_display = f"{growth}%" if growth else "N/A"
-            # Add this threat as a table row
+        # Loop through each startup to add a table row
+        for t in startups:
+            # Get the startup name
+            name = t.get("startup_name", "")
+            # Get the industry and subsector
+            industry = t.get("industry", "")
+            # Get the subsector
+            subsector = t.get("subsector", "")
+            # Build the industry display string
+            industry_display = f"{industry}<br><small>{subsector}</small>" if subsector else industry
+            # Get the strategy and build a styled tag
+            strategy = t.get("strategy", "")
+            # Build the strategy tag HTML
+            strategy_html = f'<span class="strategy-tag">{strategy}</span>' if strategy else ""
+            # Get the product/service description, truncated for the table
+            product = t.get("product_service", "")
+            # Truncate long descriptions to 120 chars for the email table
+            product_display = product[:120] + "..." if len(product) > 120 else product
+            # Get the TAM estimate
+            tam = t.get("tam_estimate", "")
+            # Get the AI dependency level and build styled output
+            ai_dep = t.get("ai_dependency", "")
+            # Map AI dependency to a CSS class
+            ai_class_map = {"core": "ai-core", "significant": "ai-significant", "moderate": "ai-moderate", "minimal": "ai-minimal"}
+            # Get the appropriate CSS class
+            ai_class = ai_class_map.get(ai_dep, "ai-minimal")
+            # Build the AI dependency HTML
+            ai_html = f'<span class="{ai_class}">{ai_dep}</span>' if ai_dep else ""
+            # Get the competitive advantage, truncated
+            moat = t.get("competitive_advantage", "")
+            # Truncate long moat descriptions
+            moat_display = moat[:100] + "..." if len(moat) > 100 else moat
+            # Get the funding amount
+            funding = t.get("funding", "")
+            # Format funding display
+            funding_display = funding if funding else "N/A"
+            # Add this startup as a table row
             html += f"""
             <tr>
-                <td><strong>{startup_name}</strong></td>
-                <td>{target_display}</td>
-                <td>{side_html}</td>
-                <td class="{score_class}">{score}/5 ({severity})</td>
-                <td>{t.get('threat_type', '')}</td>
-                <td>{t.get('reasoning', '')}</td>
-                <td>{ev_html}</td>
-                <td>{growth_display}</td>
+                <td><strong>{name}</strong></td>
+                <td>{industry_display}</td>
+                <td>{strategy_html}</td>
+                <td>{product_display}</td>
+                <td>{tam}</td>
+                <td>{ai_html}</td>
+                <td>{moat_display}</td>
+                <td>{funding_display}</td>
             </tr>
             """
         # Close the table
         html += "</table>"
-    # If no threats were found
+    # If no startups were classified
     else:
-        # Add a no-threats message
-        html += "<p>No competitive threats identified this week.</p>"
+        # Add a no-data message
+        html += "<p>No startups classified this week.</p>"
     # Add the attachment note and footer
     html += """
-        <p style="margin-top: 16px;"><em>See attached CSV for full details.</em></p>
+        <p style="margin-top: 16px;"><em>See attached CSV for full classification details.</em></p>
         <p class="footer">Generated by Disruption Monitor</p>
     </body>
     </html>
