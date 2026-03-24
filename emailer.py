@@ -116,6 +116,7 @@ def build_email_html(startups, portfolio_name, date_str):
                 <th>AI Dependency</th>
                 <th>Competitive Advantage</th>
                 <th>Est. ARR</th>
+                <th>Growth</th>
                 <th>Funding</th>
             </tr>
         """
@@ -155,6 +156,10 @@ def build_email_html(startups, portfolio_name, date_str):
             est_arr = t.get("estimated_arr", "")
             # Format ARR display
             arr_display = est_arr if est_arr else "N/A"
+            # Get the growth rate (employee growth from Growjo)
+            growth = t.get("growth", "")
+            # Format growth display
+            growth_display = growth if growth else "N/A"
             # Get the funding amount
             funding = t.get("funding", "")
             # Format funding display
@@ -170,6 +175,7 @@ def build_email_html(startups, portfolio_name, date_str):
                 <td>{ai_html}</td>
                 <td>{moat_display}</td>
                 <td>{arr_display}</td>
+                <td>{growth_display}</td>
                 <td>{funding_display}</td>
             </tr>
             """
