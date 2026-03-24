@@ -116,7 +116,7 @@ def build_email_html(startups, portfolio_name, date_str):
                 <th>AI Dependency</th>
                 <th>Competitive Advantage</th>
                 <th>Est. ARR</th>
-                <th>Growth</th>
+                <th>Employee Growth (%)</th>
                 <th>Funding</th>
             </tr>
         """
