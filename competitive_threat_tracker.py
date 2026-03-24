@@ -38,16 +38,13 @@ EXCLUDED_TICKERS = {"Cash&Other", "JPY", "FGXXX"}
 # Define keywords that identify ETFs and index funds by name (case-insensitive matching)
 ETF_NAME_KEYWORDS = ["etf", "ishares", "invesco", "advisorshares", "spdr", "vanguard", "index fund"]
 
-# Define keywords used to identify software/SaaS/tech companies for the --scope software filter
-SOFTWARE_SCOPE_KEYWORDS = [
-    "software", "saas", "cloud", "platform", "app", "digital", "tech",
-    "ai", "artificial intelligence", "machine learning", "data", "analytics",
-    "automation", "cybersecurity", "cyber", "devops", "api", "fintech",
-    "edtech", "healthtech", "martech", "adtech", "regtech", "insurtech",
-    "blockchain", "crypto", "iot", "internet of things", "robotics",
-    "computer", "computing", "web", "mobile", "streaming", "e-commerce",
-    "ecommerce", "payment", "neobank", "digital bank",
-]
+# Define an explicit whitelist of Growjo Industry values that qualify as software/tech
+SOFTWARE_INDUSTRY_WHITELIST = {
+    "ai", "saas", "tech services", "fintech", "it security", "digital health",
+    "internet", "analytics", "devops", "hr", "marketing", "martech", "adtech",
+    "salestech", "edtech", "legaltech", "iot", "networking", "event tech",
+    "content", "e-learning providers", "foodtech",
+}
 
 
 # Define a function to check if a holding is an ETF, cash, currency, or other non-operating entity
@@ -438,22 +435,29 @@ def filter_startups_by_scope(companies, scope):
         return companies
     # Initialize a list to store companies that match the software scope
     filtered = []
-    # Loop through each company to check if it's in the software/tech space
+    # Track which industries were rejected for the log
+    rejected_industries = {}
+    # Loop through each company to check if its Industry field is in the whitelist
     for company in companies:
-        # Build a searchable text blob from the company's industry and description fields
-        searchable = " ".join([
-            company.get("industry", ""),
-            company.get("description", ""),
-            company.get("company_name", ""),
-        ]).lower()
-        # Check if any software/tech keyword appears in the searchable text
-        matched = any(kw in searchable for kw in SOFTWARE_SCOPE_KEYWORDS)
-        # If the company matches at least one keyword, keep it
-        if matched:
+        # Get the industry field and normalize to lowercase for matching
+        industry = company.get("industry", "").strip().lower()
+        # Check if this industry is in the explicit whitelist
+        if industry in SOFTWARE_INDUSTRY_WHITELIST:
             # Add the matching company to our filtered list
             filtered.append(company)
+        else:
+            # Track rejected industries for debugging
+            rejected_industries[industry] = rejected_industries.get(industry, 0) + 1
     # Print how many companies passed the scope filter
     print(f"  Scope: software — filtered {len(companies)} startups down to {len(filtered)} software/SaaS/tech companies")
+    # Print the top rejected industries for transparency
+    if rejected_industries:
+        # Sort by count descending and show top 5
+        top_rejected = sorted(rejected_industries.items(), key=lambda x: -x[1])[:5]
+        # Format the rejected list
+        rejected_str = ", ".join(f"{ind} ({cnt})" for ind, cnt in top_rejected)
+        # Print which industries were excluded
+        print(f"    Top excluded industries: {rejected_str}")
     # Return the filtered list of software-relevant startups
     return filtered
 
