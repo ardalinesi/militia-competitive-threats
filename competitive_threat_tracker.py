@@ -79,23 +79,14 @@ except ImportError:
     # Exit the script since we can't read Excel without openpyxl
     sys.exit(1)
 
-# Try importing the Anthropic API client library
+# Try importing the OpenAI API client library
 try:
-    # Import the Anthropic class from the anthropic package
-    from anthropic import Anthropic
-# Catch the import error if anthropic is not installed
+    # Import the OpenAI class from the openai package
+    from openai import OpenAI
+# Catch the import error if openai is not installed
 except ImportError:
-    # Set Anthropic to None so we can check later if it's available
-    Anthropic = None
-
-# Try importing yfinance for financial data lookups
-try:
-    # Import yfinance to pull earnings, revenue, analyst recommendations, and price data
-    import yfinance as yf
-# Catch the import error if yfinance is not installed
-except ImportError:
-    # Set yf to None so we can check later if it's available
-    yf = None
+    # Set OpenAI to None so we can check later if it's available
+    OpenAI = None
 
 
 # Define a function to parse and return command-line arguments
@@ -533,8 +524,8 @@ Return ONLY a JSON array (no markdown fences, no extra text):
     return prompt
 
 
-# Define a function to call the Anthropic API with rate limiting support
-def call_anthropic_api(client, prompt, dry_run=False):
+# Define a function to call the OpenAI API with rate limiting support
+def call_openai_api(client, prompt, dry_run=False):
     # If this is a dry run, display the prompt without making an API call
     if dry_run:
         # Print a separator line for readability
@@ -549,65 +540,28 @@ def call_anthropic_api(client, prompt, dry_run=False):
         print("=" * 80 + "\n")
         # Return None since no API call was made
         return None
-    # Check if the Anthropic client library was successfully imported
+    # Check if the OpenAI client library was successfully imported
     if client is None:
         # Print an error that the API client is not available
-        print("  Error: Anthropic API client not available.")
+        print("  Error: OpenAI API client not available.")
         # Return None
         return None
     # Try to make the actual API call
     try:
-        # Send the prompt to Claude Sonnet with high token limit to avoid JSON truncation
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        # Send the prompt to GPT-4o-mini with high token limit to avoid JSON truncation
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=16384,
             messages=[{"role": "user", "content": prompt}],
         )
-        # Extract the text content from the first content block of the response
-        text = response.content[0].text
+        # Extract the text content from the first choice in the response
+        text = response.choices[0].message.content
         # Return the raw response text
         return text
     # Catch any errors from the API call
     except Exception as e:
         # Print the error details
         print(f"  API call failed: {e}")
-        # Return None to indicate the call failed
-        return None
-
-
-# Define a function to call the Anthropic API with web search tool enabled for qualitative research
-def call_anthropic_api_with_search(client, prompt):
-    # Check if the Anthropic client library was successfully imported
-    if client is None:
-        # Print an error that the API client is not available
-        print("  Error: Anthropic API client not available.")
-        # Return None
-        return None
-    # Try to make the API call with web search tool
-    try:
-        # Send the prompt to Claude Sonnet with web search enabled and high token limit
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=16384,
-            tools=[{"type": "web_search_20250305", "name": "web_search"}],
-            messages=[{"role": "user", "content": prompt}],
-        )
-        # Initialize an empty list to collect text responses from content blocks
-        text_parts = []
-        # Loop through each content block in the response
-        for block in response.content:
-            # Check if this block is a text block (not a tool use block)
-            if hasattr(block, "text"):
-                # Add the text to our collection
-                text_parts.append(block.text)
-        # Join all text parts into a single string
-        text = "\n".join(text_parts)
-        # Return the combined response text
-        return text
-    # Catch any errors from the API call
-    except Exception as e:
-        # Print the error details
-        print(f"  API call with web search failed: {e}")
         # Return None to indicate the call failed
         return None
 
@@ -880,24 +834,24 @@ def main():
     client = None
     # Check if this is not a dry run (we need the actual client)
     if not args.dry_run:
-        # Check if the anthropic library was imported successfully
-        if Anthropic is None:
+        # Check if the openai library was imported successfully
+        if OpenAI is None:
             # Print an error about the missing library
-            print("  Error: anthropic package not installed. Install with: pip install anthropic")
+            print("  Error: openai package not installed. Install with: pip install openai")
             # Suggest using dry-run mode instead
             print("  Tip: Use --dry-run to preview prompts without the API.")
             # Exit the script
             return
-        # Try to create the Anthropic client (reads ANTHROPIC_API_KEY from env)
+        # Try to create the OpenAI client (reads OPENAI_API_KEY from env)
         try:
             # Initialize the API client
-            client = Anthropic()
+            client = OpenAI()
         # Catch initialization errors (e.g., missing API key)
         except Exception as e:
             # Print the initialization error
-            print(f"  Error initializing Anthropic client: {e}")
+            print(f"  Error initializing OpenAI client: {e}")
             # Print a hint about setting the API key
-            print("  Make sure ANTHROPIC_API_KEY is set in your environment.")
+            print("  Make sure OPENAI_API_KEY is set in your environment.")
             # Exit the script
             return
     # Calculate how many batches we need based on the startups-per-batch setting
@@ -935,7 +889,7 @@ def main():
         # Record the current time as the timestamp of this API call
         last_api_call = time.time()
         # Make the API call (or display the prompt in dry-run mode)
-        response_text = call_anthropic_api(client, prompt, dry_run=args.dry_run)
+        response_text = call_openai_api(client, prompt, dry_run=args.dry_run)
         # Parse the structured JSON response from the API
         batch_classifications = parse_classification_response(response_text)
         # Print how many startups were successfully classified in this batch
