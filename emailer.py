@@ -115,6 +115,7 @@ def build_email_html(startups, portfolio_name, date_str):
                 <th>TAM</th>
                 <th>AI Dependency</th>
                 <th>Competitive Advantage</th>
+                <th>Est. ARR</th>
                 <th>Funding</th>
             </tr>
         """
@@ -150,6 +151,10 @@ def build_email_html(startups, portfolio_name, date_str):
             moat = t.get("competitive_advantage", "")
             # Truncate long moat descriptions
             moat_display = moat[:100] + "..." if len(moat) > 100 else moat
+            # Get the estimated ARR
+            est_arr = t.get("estimated_arr", "")
+            # Format ARR display
+            arr_display = est_arr if est_arr else "N/A"
             # Get the funding amount
             funding = t.get("funding", "")
             # Format funding display
@@ -164,6 +169,7 @@ def build_email_html(startups, portfolio_name, date_str):
                 <td>{tam}</td>
                 <td>{ai_html}</td>
                 <td>{moat_display}</td>
+                <td>{arr_display}</td>
                 <td>{funding_display}</td>
             </tr>
             """
