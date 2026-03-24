@@ -548,9 +548,9 @@ def call_openai_api(client, prompt, dry_run=False):
         return None
     # Try to make the actual API call
     try:
-        # Send the prompt to GPT-4o-mini with high token limit to avoid JSON truncation
+        # Send the prompt to GPT-4.1-mini with high token limit to avoid JSON truncation
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             max_tokens=16384,
             messages=[{"role": "user", "content": prompt}],
         )
