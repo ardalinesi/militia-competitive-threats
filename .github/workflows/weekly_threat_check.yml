@@ -1,11 +1,7 @@
 name: Weekly Startup Intelligence Report
 
 on:
-  # Run every Monday at 3:00 PM UTC (9:00 AM CT)
-  schedule:
-    - cron: '0 15 * * 1'
-
-  # Allow manual trigger with test mode option
+  # Manual trigger only
   workflow_dispatch:
     inputs:
       test_mode:
@@ -31,7 +27,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run startup classification (production)
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.test_mode == 'false' }}
+        if: ${{ github.event.inputs.test_mode == 'false' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
